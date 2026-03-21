@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Incident Detail | Liquid Ops</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "background": "#0F172A",
+              "surface": "#1E293B",
+              "primary": "#38BDF8",
+              "on-primary": "#0F172A",
+              "secondary": "#94A3B8",
+              "error": "#F43F5E",
+              "warning": "#F59E0B",
+              "success": "#10B981",
+              "on-surface": "#F8FAFC",
+              "on-surface-muted": "#64748B",
+              "outline": "rgba(255, 255, 255, 0.08)",
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .liquid-glass {
+            backdrop-filter: blur(24px) saturate(180%);
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .liquid-glass-darker {
+            backdrop-filter: blur(24px) saturate(180%);
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .liquid-glass-red {
+            backdrop-filter: blur(24px) saturate(200%);
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(244, 63, 94, 0.05) 100%);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .timeline-glow:hover .timeline-dot {
+            transform: scale(1.3);
+            box-shadow: 0 0 15px currentColor;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary min-h-screen">
+<!-- SideNavBar (Rail) -->
+<aside class="h-screen w-20 hover:w-64 transition-all duration-300 fixed left-0 top-0 z-50 bg-[#0F172A]/80 backdrop-blur-xl flex flex-col py-6 shadow-2xl border-r border-white/5 group">
+<div class="px-6 mb-10 flex items-center gap-4">
+<div class="w-8 h-8 rounded-lg primary-gradient flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-on-primary text-xl" data-icon="water_drop">water_drop</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity overflow-hidden whitespace-nowrap">
+<h1 class="text-xl font-bold tracking-tighter text-on-surface uppercase">Liquid Ops</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-muted">Operational Intel</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-muted hover:text-on-surface hover:bg-white/5 transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 bg-primary/10 text-primary border-l-4 border-primary transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="warning">warning</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Hazards</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-muted hover:text-on-surface hover:bg-white/5 transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="local_shipping">local_shipping</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Dispatch</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-muted hover:text-on-surface hover:bg-white/5 transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="insights">insights</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Analytics</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-muted hover:text-on-surface hover:bg-white/5 transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Settings</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-2 border-t border-white/5 pt-6">
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-muted hover:text-on-surface hover:bg-white/5 transition-colors group/nav" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help_outline">help_outline</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-['Plus_Jakarta_Sans'] text-sm tracking-tight">Support</span>
+</a>
+<div class="px-6 py-4 flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Headshot of professional male operations manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7bUflDCa6bU-_-aKd9ZtqFYCmxQOG6lg1AhcK9MzvXNjBW42LW-nGqVfU_NvsMCH3yBDBQNJtAl76KiWqK3JhLOIjLOwJAABXGjRXxOUv1qWHtVjxrHOShdS552FAb066QcBbA_wWWJPeqIw8DVTbIAeXfvAGnAPVG7SYjqjgMoWC5vxy9xccDyd9XBaDzxgyCITPxRD8Fr8lCK2mgRbEQxkk31lWYFcED-nLvPmO2VgQ8nni23vpIXbf0_ZGWyEURd4kf5tirc4"/>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity overflow-hidden whitespace-nowrap">
+<p class="text-xs font-semibold text-on-surface">C. Mitchell</p>
+<p class="text-[10px] text-on-surface-muted uppercase">Supervisor</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="ml-20 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-20 right-0 z-40 bg-[#0F172A]/40 backdrop-blur-xl flex justify-between items-center px-8 h-16 border-b border-white/5">
+<div class="flex items-center gap-6">
+<span class="text-lg font-black tracking-widest text-on-surface uppercase">Hazard Reporter</span>
+<nav class="hidden md:flex gap-8">
+<a class="text-on-surface-muted hover:text-on-surface font-['Plus_Jakarta_Sans'] font-semibold transition-all" href="#">Live Map</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-['Plus_Jakarta_Sans'] font-semibold transition-all" href="#">Reports</a>
+<a class="text-on-surface-muted hover:text-on-surface font-['Plus_Jakarta_Sans'] font-semibold transition-all" href="#">Resources</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-error/10 text-error px-4 py-2 rounded-xl text-sm font-bold tracking-tight hover:bg-error/20 border border-error/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="emergency">emergency</span>
+                    Emergency Alert
+                </button>
+<div class="h-6 w-[1px] bg-white/10 mx-2"></div>
+<button class="text-on-surface-muted hover:text-on-surface transition-all hover:scale-110"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="text-on-surface-muted hover:text-on-surface transition-all hover:scale-110"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="pt-24 pb-20 px-12 max-w-[1600px] w-full mx-auto space-y-8">
+<!-- Emergency Banner -->
+<div class="relative overflow-hidden rounded-2xl liquid-glass-red p-6 flex items-center justify-between shadow-2xl shadow-error/10 border-error/30">
+<div class="flex items-center gap-5 z-10">
+<div class="w-12 h-12 rounded-full bg-error/20 flex items-center justify-center animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)] border border-error/40">
+<span class="material-symbols-outlined text-error text-3xl font-bold" data-icon="priority_high">priority_high</span>
+</div>
+<div>
+<h2 class="text-on-surface font-headline font-bold text-xl tracking-tight">Urgent Action Required</h2>
+<p class="text-on-surface-muted text-sm">Automated systems flagged this incident as a potential catastrophic infrastructure failure.</p>
+</div>
+</div>
+<div class="z-10 flex gap-3">
+<button class="px-5 py-2 bg-error text-white font-bold rounded-xl text-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-error/20">Deploy Response Team</button>
+<button class="px-5 py-2 border border-white/10 bg-white/5 text-on-surface font-bold rounded-xl text-sm hover:bg-white/10 transition-all">Acknowledge</button>
+</div>
+<div class="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-error/10 to-transparent"></div>
+</div>
+<!-- Header: Incident ID & Title -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border border-primary/20">Active Response</span>
+<span class="text-on-surface-muted font-label text-xs tracking-widest">SUBMITTED 14:22 EST</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-headline font-bold text-on-surface tracking-tight max-w-4xl">
+<span class="text-on-surface-muted/60">#HAZ-2491:</span> Water Main Leak at Central Plaza
+                    </h1>
+</div>
+<div class="flex flex-col items-end gap-3">
+<div class="flex items-center gap-4 bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-white/10 group/status transition-all hover:bg-white/10">
+<div class="flex flex-col items-end px-4">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-muted font-bold">Current Status</span>
+<span class="text-primary font-bold">In Progress</span>
+</div>
+<div class="relative">
+<select class="bg-white/10 border-none text-on-surface rounded-xl text-sm focus:ring-primary focus:ring-offset-0 cursor-pointer appearance-none pr-10 pl-4 py-2 hover:bg-white/20 transition-all">
+<option class="bg-slate-900">Change Status</option>
+<option class="bg-slate-900">Escalated</option>
+<option class="bg-slate-900">Resolved</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-muted text-sm" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Grid (Asymmetric Bento) -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Column: Reports and Details -->
+<div class="col-span-12 lg:col-span-8 space-y-8">
+<!-- Raw Report Section -->
+<section class="liquid-glass rounded-2xl p-8 space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="font-headline font-semibold text-xl text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+                                Raw User Report
+                            </h3>
+<button class="text-xs text-primary font-bold uppercase tracking-widest hover:text-primary/80 transition-colors">View Metadata</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+<div class="md:col-span-3 space-y-4">
+<p class="text-on-surface leading-relaxed text-lg italic font-body bg-white/5 p-6 rounded-2xl border-l-4 border-primary/50 shadow-inner">
+                                    "There is water gushing out from under the pavement near the south entrance of Central Plaza. It started small about 10 minutes ago but now it's flooding the sidewalk and heading toward the basement shops. No site staff are visible."
+                                </p>
+<div class="flex gap-4">
+<div class="flex items-center gap-2 text-on-surface-muted text-xs font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="person">person</span>
+                                        Reporter: J. Doe (Visitor)
+                                    </div>
+<div class="flex items-center gap-2 text-on-surface-muted text-xs font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+                                        GPS: 40.7128° N, 74.0060° W
+                                    </div>
+</div>
+</div>
+<div class="md:col-span-2 group">
+<div class="relative aspect-video rounded-2xl overflow-hidden bg-white/5 cursor-zoom-in border border-white/10">
+<img alt="Water main leak photo" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" data-alt="A flooded urban sidewalk with water gushing from broken pavement" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR-2tYSOKGLY__Eha9rsFe7LGh9mHr_10Yk0SJfUtuaX0qOEqvj_hpk-4Kk-_8VNwkuc_ZmDnAslXmZ4WXBQM_rwK2_9FjZhWrgxP0WpTIu0mcnuvceLLuls-EChsBg4bhUi6gUwQbaWCi9iXseLRfr0MJ4z7uK8-KleQN-4MT_AkTm-kY3nf2roZ2USj6ca1Rk4XR8RQUo2LAyTMLR4HNUosZuMiqrkqWQbZXpmVA5wbrJ5oPTQOKIvSQal9Il44Wt3SCVr4VYyc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">
+<span class="text-[10px] text-white font-bold tracking-widest uppercase">Attachment: IMG_8821.jpg</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Extracted Details & AI Comparison -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Extracted Data -->
+<section class="liquid-glass rounded-2xl p-8 space-y-6">
+<h3 class="font-headline font-semibold text-xl text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="database">database</span>
+                                Extracted Details
+                            </h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center py-3 border-b border-white/5">
+<span class="text-sm font-label uppercase tracking-widest text-on-surface-muted">Category</span>
+<span class="text-on-surface font-bold">Infrastructure</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/5">
+<span class="text-sm font-label uppercase tracking-widest text-on-surface-muted">Sub-category</span>
+<span class="text-on-surface font-bold">Plumbing / Water</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/5">
+<span class="text-sm font-label uppercase tracking-widest text-on-surface-muted">Affected Area</span>
+<span class="text-on-surface font-bold">South Plaza, Level 0</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/5">
+<span class="text-sm font-label uppercase tracking-widest text-on-surface-muted">Asset Linked</span>
+<span class="text-primary font-bold hover:text-primary/80 cursor-pointer transition-colors">WM-NYC-401-A</span>
+</div>
+</div>
+</section>
+<!-- AI/Rules Comparison -->
+<section class="liquid-glass-darker rounded-2xl p-8 space-y-6 border border-primary/10">
+<div class="flex items-center justify-between">
+<h3 class="font-headline font-semibold text-xl text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+                                    Classification Logic
+                                </h3>
+<div class="px-3 py-1 bg-primary/20 text-primary rounded-lg text-[10px] font-bold tracking-widest border border-primary/20">94% CONFIDENCE</div>
+</div>
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<div class="w-1.5 h-12 bg-white/10 rounded-full shrink-0"></div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-muted font-bold mb-1">AI-Suggested Severity</p>
+<p class="text-warning font-headline font-bold text-lg">High Severity</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-1.5 h-12 bg-error rounded-full shrink-0 shadow-[0_0_10px_rgba(244,63,94,0.5)]"></div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-muted font-bold mb-1">Rules-Based Final Severity</p>
+<div class="flex items-center gap-2">
+<p class="text-error font-headline font-bold text-lg">Urgent</p>
+<span class="px-2 py-0.5 bg-error/20 text-error text-[8px] font-bold uppercase rounded border border-error/30">Manual Override</span>
+</div>
+</div>
+</div>
+<p class="text-xs text-on-surface-muted bg-white/5 p-4 rounded-xl leading-relaxed border border-white/5">
+<span class="font-bold text-primary">Reasoning:</span> "Basement shops" keyword triggered proximity-to-risk rule R-902, elevating threat level beyond standard leak parameters.
+                                </p>
+</div>
+</section>
+</div>
+<!-- Admin Notes Area -->
+<section class="liquid-glass rounded-2xl p-8 space-y-4">
+<label class="font-headline font-semibold text-xl text-on-surface block">Operations Command Notes</label>
+<textarea class="w-full bg-white/5 border border-white/10 rounded-2xl text-on-surface placeholder:text-on-surface-muted focus:ring-1 focus:ring-primary focus:bg-white/10 transition-all p-4 resize-none" placeholder="Enter administrative actions, coordinating instructions, or site specific hazard notes..." rows="4"></textarea>
+<div class="flex justify-end">
+<button class="bg-primary hover:bg-primary/80 text-on-primary px-8 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="save">save</span>
+                                Update Logs
+                            </button>
+</div>
+</section>
+</div>
+<!-- Right Column: Timeline & Side Controls -->
+<div class="col-span-12 lg:col-span-4 space-y-8">
+<!-- Dispatch Timeline -->
+<section class="liquid-glass rounded-2xl p-8">
+<h3 class="font-headline font-semibold text-xl text-on-surface mb-8 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+                            Incident Timeline
+                        </h3>
+<div class="relative space-y-8 before:absolute before:inset-0 before:left-3 before:w-[1px] before:bg-white/10 before:h-full">
+<!-- Timeline Items -->
+<div class="relative pl-10 flex flex-col gap-1 group/item timeline-glow transition-all duration-300 hover:translate-x-1">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-white/10 z-10 transition-all duration-300 group-hover/item:border-success/50">
+<div class="timeline-dot w-2 h-2 rounded-full bg-success shadow-[0_0_8px_#10B981] transition-all duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-muted uppercase tracking-widest">14:22:01</span>
+<h4 class="font-semibold text-on-surface group-hover/item:text-primary transition-colors">Report Submitted</h4>
+<p class="text-xs text-on-surface-muted">Mobile submission via Citizen Portal.</p>
+</div>
+<div class="relative pl-10 flex flex-col gap-1 group/item timeline-glow transition-all duration-300 hover:translate-x-1">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-white/10 z-10 transition-all duration-300 group-hover/item:border-primary/50">
+<div class="timeline-dot w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#38BDF8] transition-all duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-muted uppercase tracking-widest">14:22:04</span>
+<h4 class="font-semibold text-on-surface group-hover/item:text-primary transition-colors">System Classified</h4>
+<p class="text-xs text-on-surface-muted">Categorized as 'Critical Infrastructure'.</p>
+</div>
+<div class="relative pl-10 flex flex-col gap-1 group/item timeline-glow transition-all duration-300 hover:translate-x-1">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-white/10 z-10 transition-all duration-300 group-hover/item:border-warning/50">
+<div class="timeline-dot w-2 h-2 rounded-full bg-warning shadow-[0_0_8px_#F59E0B] transition-all duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-muted uppercase tracking-widest">14:24:12</span>
+<h4 class="font-semibold text-on-surface group-hover/item:text-primary transition-colors">Routed to Facilities</h4>
+<p class="text-xs text-on-surface-muted">Auto-alert sent to District Manager.</p>
+</div>
+<div class="relative pl-10 flex flex-col gap-1 group/item timeline-glow transition-all duration-300 hover:translate-x-1">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-white/10 z-10 transition-all duration-300 group-hover/item:border-error/50">
+<div class="timeline-dot w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_12px_#F43F5E] transition-all duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-muted uppercase tracking-widest">14:26:00</span>
+<h4 class="font-semibold text-error">Staff Assigned</h4>
+<div class="flex items-center gap-2 mt-2 bg-white/5 p-2 rounded-xl border border-white/5 w-fit">
+<div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-white/10">
+<img alt="Assigned Tech" class="w-full h-full object-cover" data-alt="Technical operations employee profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAb9DPs1YDhPG6wpwV3r5pTWXpiKLwJjPT3yP-Ed9CovghTy-kOXoKs0RJxPh3w0dHwudA0ar4wQrimkw4phI2jSEwSdNVM55NZAJw-bOY48ky49MeNqQoQTn46mpjgwPkR072pb2DRgCdtszWL85EwZdoL6cl31WnnowT0_u-NVmhiHt-DwRPmLz5jYwVdGW8hv2qMDOiRcrQmi2SGsmk24LfCBunKTrM0dl9xogFsRpqvsrzWaSwk6uH6xg4a7b810QPHsKVIK48"/>
+</div>
+<span class="text-[10px] text-on-surface font-semibold uppercase tracking-tight">B. Richards</span>
+</div>
+</div>
+</div>
+<!-- Map Preview -->
+<div class="mt-12 space-y-4">
+<h4 class="text-[10px] uppercase tracking-widest text-on-surface-muted font-bold">Dispatch Location</h4>
+<div class="rounded-2xl overflow-hidden h-48 relative border border-white/10 shadow-lg group/map cursor-crosshair">
+<img alt="Map Location" class="w-full h-full object-cover grayscale opacity-50 transition-all duration-700 group-hover/map:scale-110 group-hover/map:opacity-70 group-hover/map:grayscale-0" data-location="New York City" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC84kCXvk-oXXe394asaqoogUggNQBRGeVbhEXvOTKwcEEebgbOMJ88TSq7gbz7m3dEkXDnJejgW6ArwUD3UHDshuUsFB7crAA-4mHVHRaSLAD4FDzhX2SST83_oKAFd4UJ9ZudfVUYsxPMSPoaAwYS2v7YwRsE60mik-Xf4ffDktiZYvJku3RF3iN5QKIqNPByw6KOlKxSeodBAe4Ibsnh7-8H_tG2DtJ_H6V9oYtzoFBGHvFVrXG5EL_HgJGYbhETJsQSjd5dNzk"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-6 h-6 rounded-full bg-primary/30 animate-ping"></div>
+<div class="w-3 h-3 rounded-full bg-primary absolute shadow-[0_0_15px_#38BDF8]"></div>
+</div>
+<div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-bold text-on-surface border border-white/10">
+                                    Sector 7A - Central Plaza
+                                </div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-auto bg-[#0F172A] border-t border-white/5">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 py-10 gap-4">
+<p class="font-['Inter'] text-xs uppercase tracking-widest text-on-surface-muted">© 2024 Liquid Operational Intelligence. All rights reserved.</p>
+<div class="flex gap-8">
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-on-surface-muted hover:text-primary transition-all" href="#">Privacy Policy</a>
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-on-surface-muted hover:text-primary transition-all" href="#">Terms of Service</a>
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-on-surface-muted hover:text-primary transition-all" href="#">System Status</a>
+</div>
+</div>
+</footer>
+</main>
+</body></html>

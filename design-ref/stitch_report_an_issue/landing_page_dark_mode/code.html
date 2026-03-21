@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hazard Reporter + Dispatch Engine | Obsidian Flow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "obsidian-dark": "#0F172A",
+                        "on-secondary-fixed": "#0b1c30",
+                        "primary-container": "#1E293B",
+                        "outline-variant": "#334155",
+                        "surface-variant": "#1e293b",
+                        "on-primary": "#0f172a",
+                        "on-primary-fixed": "#e2e8f0",
+                        "surface-bright": "#334155",
+                        "surface-dim": "#020617",
+                        "inverse-primary": "#38bdf8",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#450a0a",
+                        "primary-fixed": "#bae6fd",
+                        "inverse-surface": "#f8fafc",
+                        "on-surface-variant": "#94a3b8",
+                        "secondary-fixed-dim": "#94a3b8",
+                        "tertiary-fixed-dim": "#fca5a5",
+                        "surface-container": "#1e293b",
+                        "secondary-container": "#334155",
+                        "tertiary-fixed": "#fecaca",
+                        "on-error-container": "#fecaca",
+                        "surface-container-highest": "#334155",
+                        "primary": "#38bdf8",
+                        "secondary": "#64748b",
+                        "on-secondary-container": "#cbd5e1",
+                        "on-surface": "#f1f5f9",
+                        "tertiary": "#f87171",
+                        "surface": "#0f172a",
+                        "on-tertiary": "#7f1d1d",
+                        "secondary-fixed": "#e2e8f0",
+                        "on-primary-container": "#7dd3fc",
+                        "surface-container-lowest": "#020617",
+                        "primary-fixed-dim": "#7dd3fc",
+                        "on-tertiary-fixed": "#450a0a",
+                        "surface-container-high": "#1e293b",
+                        "inverse-on-surface": "#0f172a",
+                        "error": "#f87171",
+                        "surface-container-low": "#0f172a",
+                        "on-background": "#f8fafc",
+                        "on-tertiary-container": "#fca5a5",
+                        "surface-tint": "#38bdf8",
+                        "outline": "#475569",
+                        "on-primary-fixed-variant": "#0ea5e9",
+                        "error-container": "#7f1d1d",
+                        "on-secondary": "#1e293b",
+                        "on-secondary-fixed-variant": "#475569",
+                        "background": "#0f172a",
+                        "on-tertiary-fixed-variant": "#991b1b"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0F172A;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Obsidian Glass Effects */
+        .liquid-glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .liquid-glass-white {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cta-gradient {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cta-gradient:hover {
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px) scale(1.02);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .glass-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+        }
+        .interactive-item {
+            transition: all 0.25s ease;
+        }
+        .interactive-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .haze-bg {
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(248, 113, 113, 0.03) 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="selection:bg-primary/30 haze-bg">
+<!-- Top Navigation Rail -->
+<nav class="fixed top-0 w-full z-40 bg-obsidian-dark/60 backdrop-blur-2xl border-b border-white/5 flex justify-between items-center px-8 h-16 font-['Plus_Jakarta_Sans'] font-semibold">
+<div class="flex items-center gap-2">
+<span class="text-lg font-black tracking-widest text-slate-100 uppercase">Hazard Reporter</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-primary border-b-2 border-primary/50 pb-1 transition-all duration-300 ease-in-out hover:border-primary" href="#">Live Map</a>
+<a class="text-slate-400 hover:text-slate-100 transition-all duration-300 ease-in-out" href="#">Reports</a>
+<a class="text-slate-400 hover:text-slate-100 transition-all duration-300 ease-in-out" href="#">Resources</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-error-container/80 backdrop-blur-md text-white px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 border border-error/20">
+            Emergency Alert
+        </button>
+<div class="flex gap-2 text-slate-400">
+<span class="material-symbols-outlined cursor-pointer hover:text-slate-100 hover:scale-110 transition-all" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-slate-100 hover:scale-110 transition-all" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</nav>
+<!-- Side Rail -->
+<aside class="h-screen w-20 hover:w-64 transition-all duration-500 fixed left-0 top-0 z-50 flex flex-col py-6 bg-slate-950/60 backdrop-blur-2xl shadow-2xl group border-r border-white/5">
+<div class="px-6 mb-10 flex items-center gap-4 overflow-hidden whitespace-nowrap">
+<div class="min-w-[32px] h-8 bg-primary/20 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-lg shadow-primary/10 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="water_drop">water_drop</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<p class="text-xl font-bold tracking-tighter text-slate-100">Liquid Ops</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-[0.2em]">Operational Intel</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<div class="px-4">
+<div class="flex items-center gap-4 p-3 rounded-xl bg-primary/10 text-primary border-l-4 border-primary transition-all duration-300 cursor-pointer hover:bg-primary/20">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Dashboard</span>
+</div>
+</div>
+<div class="px-4">
+<div class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Hazards</span>
+</div>
+</div>
+<div class="px-4">
+<div class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Dispatch</span>
+</div>
+</div>
+<div class="px-4">
+<div class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Analytics</span>
+</div>
+</div>
+</div>
+<div class="mt-auto px-4 flex flex-col gap-2">
+<div class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Support</span>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="opacity-0 group-hover:opacity-100 font-['Plus_Jakarta_Sans'] text-sm tracking-tight transition-opacity duration-300">Settings</span>
+</div>
+</div>
+</aside>
+<main class="ml-20 min-h-screen">
+<!-- Hero Section -->
+<section class="relative pt-32 pb-24 px-8 md:px-16 overflow-hidden">
+<div class="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[160px] -translate-y-1/2 translate-x-1/4"></div>
+<div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[140px] translate-y-1/2 -translate-x-1/4"></div>
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<div class="relative z-10">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full liquid-glass-white mb-6 border-white/10">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(56,189,248,0.8)]"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-slate-300">v4.2 Operational Ready</span>
+</div>
+<h1 class="font-headline text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight text-white">
+                    Hazard Reporter + <br/>
+<span class="text-transparent bg-clip-text cta-gradient">Dispatch Engine</span>
+</h1>
+<p class="font-body text-xl text-slate-400 max-w-xl mb-10 leading-relaxed">
+                    Faster Hazard Routing, Human-in-Control Operational Intelligence. Seamlessly bridges the gap between field incident reporting and mission-critical response.
+                </p>
+<div class="flex flex-col sm:flex-row gap-4">
+<button class="cta-gradient text-obsidian-dark font-bold px-8 py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-primary/20">
+                        Report an Issue
+                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="liquid-glass-white text-slate-100 font-semibold px-8 py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all hover:scale-105 active:scale-95">
+                        Open Dashboard
+                        <span class="material-symbols-outlined text-sm" data-icon="grid_view">grid_view</span>
+</button>
+</div>
+</div>
+<div class="relative">
+<div class="liquid-glass p-1.5 rounded-3xl border border-white/10 shadow-2xl">
+<div class="bg-obsidian-dark/40 rounded-[1.4rem] overflow-hidden aspect-video relative group">
+<img alt="Operational Dashboard Interface" class="w-full h-full object-cover opacity-50 transition-all duration-1000 group-hover:scale-105 group-hover:opacity-70" data-alt="Dark high-tech operational dashboard showing maps and data charts" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxirT6T8dNYIkqosNQhxfdYvbFJDWygrrSBrdCvgBlPmxRPvAHsO3CwHbJebvhpE69i8CE9WudsvIwyiy_GEAugtANzuWZrIoSe2pLA12I4lFJslyLN6MiULst84rNg-vb2GbeHDmjiTRwB4xYMeyZ4S4X6BIZ76PE1S8mQv2DNrK2acgY8j67btLrKfeeykmI6ZO8_2YrTPRlf5rM17Uuaza5Z2jt9ozoz6SUfLUc1HmuZ0pnYRPDjB1MbTuLH_vonqqYvvmBhuQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-obsidian-dark via-transparent to-transparent opacity-60"></div>
+<!-- Floating Stats -->
+<div class="absolute bottom-6 left-6 right-6 flex justify-between gap-4">
+<div class="liquid-glass-white px-4 py-3 rounded-2xl border border-white/5 flex-1">
+<p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Active Alerts</p>
+<p class="text-2xl font-bold font-headline text-error">24</p>
+</div>
+<div class="liquid-glass-white px-4 py-3 rounded-2xl border border-white/5 flex-1">
+<p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Response Time</p>
+<p class="text-2xl font-bold font-headline text-emerald-400">1.2m</p>
+</div>
+<div class="liquid-glass-white px-4 py-3 rounded-2xl border border-white/5 flex-1">
+<p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Ops Personnel</p>
+<p class="text-2xl font-bold font-headline text-primary">184</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof Section -->
+<section class="py-12 border-y border-white/5 bg-slate-950/40 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-8">
+<p class="text-center font-label text-[10px] uppercase tracking-[0.4em] text-slate-500 mb-8">Trusted by Campus Ops &amp; Community Safety Teams</p>
+<div class="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700 text-slate-300">
+<span class="font-headline font-extrabold text-2xl tracking-tighter">METROSAFE</span>
+<span class="font-headline font-extrabold text-2xl tracking-tighter">CAMPUSWATCH</span>
+<span class="font-headline font-extrabold text-2xl tracking-tighter">CITYTECH</span>
+<span class="font-headline font-extrabold text-2xl tracking-tighter">GUARDIAN.IO</span>
+<span class="font-headline font-extrabold text-2xl tracking-tighter">SECURENET</span>
+</div>
+</div>
+</section>
+<!-- Feature Bento Grid -->
+<section class="py-32 px-8">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="font-headline text-4xl font-bold mb-4 text-white">Precision Response Architecture</h2>
+<p class="text-slate-400 max-w-2xl mx-auto">Engineered for sub-second classification and human-verified dispatching in high-stakes environments.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<!-- Feature 1: Instant AI Extraction -->
+<div class="md:col-span-2 group">
+<div class="glass-card liquid-glass p-8 rounded-3xl h-full flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 border border-primary/20 transition-all group-hover:scale-110 group-hover:bg-primary/20">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+</div>
+<h3 class="text-2xl font-bold font-headline mb-4 text-white">Instant AI Extraction</h3>
+<p class="text-slate-400 leading-relaxed">Automatically identifies incident type, location, and severity from raw field reports, eliminating manual data entry bottlenecks.</p>
+</div>
+<div class="mt-12 overflow-hidden rounded-xl bg-slate-950/60 border border-white/5 h-32 relative">
+<div class="absolute inset-0 p-4 font-mono text-[10px] text-primary/80">
+<div class="mb-1 opacity-40">&gt; ANALYZING INCOMING STREAM...</div>
+<div class="mb-1 text-primary">&gt; HAZARD DETECTED: [STRUCTURAL_BREACH]</div>
+<div class="mb-1 opacity-60">&gt; CONFIDENCE: 98.4%</div>
+<div class="text-slate-100">&gt; LOC: QUADRANT_4_LEVEL_2</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Feature 2: Automated Classification -->
+<div class="md:col-span-2 group">
+<div class="glass-card liquid-glass p-8 rounded-3xl h-full flex flex-col justify-between">
+<div>
+<div class="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400 mb-6 border border-amber-400/20 transition-all group-hover:scale-110 group-hover:bg-amber-400/20">
+<span class="material-symbols-outlined" data-icon="category">category</span>
+</div>
+<h3 class="text-2xl font-bold font-headline mb-4 text-white">Automated Classification</h3>
+<p class="text-slate-400 leading-relaxed">Dynamic risk scoring sorts hazards into intelligent priority queues based on environmental impact and campus population density.</p>
+</div>
+<div class="mt-12 flex gap-3 overflow-hidden no-scrollbar">
+<div class="min-w-[140px] liquid-glass-white p-3 rounded-xl border-error/20 hover:bg-error/10 transition-colors">
+<div class="w-2 h-2 rounded-full bg-error mb-2 shadow-[0_0_8px_rgba(248,113,113,0.6)]"></div>
+<p class="text-[10px] font-bold text-error uppercase">Critical</p>
+<p class="text-xs text-slate-100">Gas Leak B-4</p>
+</div>
+<div class="min-w-[140px] liquid-glass-white p-3 rounded-xl border-amber-400/20 hover:bg-amber-400/10 transition-colors">
+<div class="w-2 h-2 rounded-full bg-amber-400 mb-2"></div>
+<p class="text-[10px] font-bold text-amber-400 uppercase">Moderate</p>
+<p class="text-xs text-slate-100">Lift Failure</p>
+</div>
+<div class="min-w-[140px] liquid-glass-white p-3 rounded-xl border-primary/20 hover:bg-primary/10 transition-colors">
+<div class="w-2 h-2 rounded-full bg-primary mb-2"></div>
+<p class="text-[10px] font-bold text-primary uppercase">Standard</p>
+<p class="text-xs text-slate-100">Debris Clearance</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Feature 3: Rule-Based Routing -->
+<div class="md:col-span-2 group">
+<div class="glass-card liquid-glass p-8 rounded-3xl h-full">
+<div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 border border-primary/20 transition-all group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="alt_route">alt_route</span>
+</div>
+<h3 class="text-2xl font-bold font-headline mb-4 text-white">Rule-Based Routing</h3>
+<p class="text-slate-400 leading-relaxed">Dispatch alerts to the right teams instantly. Set complex logic for multi-agency coordination and campus-wide notifications.</p>
+</div>
+</div>
+<!-- Feature 4: Track & Resolve -->
+<div class="md:col-span-2 group">
+<div class="glass-card liquid-glass p-8 rounded-3xl h-full">
+<div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 mb-6 border border-emerald-400/20 transition-all group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+</div>
+<h3 class="text-2xl font-bold font-headline mb-4 text-white">Track &amp; Resolve</h3>
+<p class="text-slate-400 leading-relaxed">End-to-end audit trails for every incident. From initial report to final resolution, maintain complete operational transparency.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Live Map Context -->
+<section class="py-24 px-8 relative overflow-hidden">
+<div class="max-w-7xl mx-auto liquid-glass rounded-[3rem] p-1.5 shadow-2xl">
+<div class="bg-obsidian-dark/40 rounded-[2.8rem] overflow-hidden flex flex-col md:flex-row h-[600px]">
+<div class="w-full md:w-1/3 p-12 flex flex-col justify-center border-r border-white/5 relative z-10 backdrop-blur-md">
+<h2 class="font-headline text-3xl font-bold mb-6 text-white">Real-Time Intelligence</h2>
+<div class="space-y-6">
+<div class="flex items-start gap-4 interactive-item p-3 -ml-3 rounded-2xl cursor-default">
+<div class="w-1.5 h-12 bg-error rounded-full shadow-[0_0_12px_rgba(248,113,113,0.5)]"></div>
+<div>
+<p class="font-bold text-slate-100">Active Hazards</p>
+<p class="text-sm text-slate-400">12 priority incidents in sector A-1</p>
+</div>
+</div>
+<div class="flex items-start gap-4 interactive-item p-3 -ml-3 rounded-2xl cursor-default">
+<div class="w-1.5 h-12 bg-primary rounded-full shadow-[0_0_12px_rgba(56,189,248,0.5)]"></div>
+<div>
+<p class="font-bold text-slate-100">Available Units</p>
+<p class="text-sm text-slate-400">4 mobile response teams standby</p>
+</div>
+</div>
+</div>
+<button class="mt-12 py-4 liquid-glass-white text-slate-200 rounded-xl font-bold hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] border-white/10 active:scale-95">
+                        Launch Map View
+                    </button>
+</div>
+<div class="flex-1 relative bg-slate-900">
+<img alt="Map interface showing city hazards" class="w-full h-full object-cover opacity-30 grayscale group-hover:grayscale-0 transition-all duration-1000" data-alt="Abstract satellite map with glowing neon hazard markers" data-location="New York" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDim2hD4iFejZNG1ph_nH9aPcHt18EsQu6Fsy4KTNRWublEkCrmEi7LR5e6HZ_cZ49h3jMeD0AQ_Kh4ftO4p6V02Elje6IQX2mY2RXJQk8ePuzjBnzFbT5bplhLzc2KkyuuS_Le-mNpcWTMFy-AK9y3QGexeUQd_7ViYW0YFjnNTJsuqFTsXwIErqRscZsbZ4YvlgEjAaoLmw0HmKBZgkTqG5pIr46M4Cfa89uQpdQzvU6cI8jERURPV-x9KgCEBw3DoGMIGEAqb4U"/>
+<div class="absolute inset-0 bg-gradient-to-r from-obsidian-dark via-transparent to-transparent"></div>
+<!-- Floating Map Pin -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="relative flex items-center justify-center">
+<div class="absolute w-16 h-16 bg-error/20 rounded-full animate-ping"></div>
+<div class="absolute w-8 h-8 bg-error/40 rounded-full blur-sm"></div>
+<div class="w-6 h-6 bg-error rounded-full border-2 border-white/40 shadow-[0_0_20px_rgba(248,113,113,0.8)]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-32 px-8">
+<div class="max-w-4xl mx-auto text-center">
+<h2 class="font-headline text-5xl font-bold mb-8 text-white">Ready to evolve your <br/><span class="text-primary text-glow">incident response?</span></h2>
+<div class="flex flex-col sm:flex-row gap-6 justify-center">
+<button class="cta-gradient text-obsidian-dark font-bold px-12 py-5 rounded-2xl text-lg shadow-2xl shadow-primary/30">
+                    Request Demo
+                </button>
+<button class="liquid-glass-white border border-white/10 text-slate-100 font-bold px-12 py-5 rounded-2xl text-lg hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-95 backdrop-blur-xl">
+                    View Documentation
+                </button>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-obsidian-dark/80 backdrop-blur-2xl w-full py-12 border-t border-white/5">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 gap-4 font-['Inter'] text-xs uppercase tracking-widest text-slate-500">
+<div class="flex items-center gap-6">
+<span class="hover:text-slate-200 cursor-pointer underline-offset-4 hover:underline transition-all">Privacy Policy</span>
+<span class="hover:text-slate-200 cursor-pointer underline-offset-4 hover:underline transition-all">Terms of Service</span>
+<span class="hover:text-slate-200 cursor-pointer underline-offset-4 hover:underline transition-all">System Status</span>
+<span class="hover:text-slate-200 cursor-pointer underline-offset-4 hover:underline transition-all">Contact Support</span>
+</div>
+<div class="">
+                © 2024 Liquid Operational Intelligence. All rights reserved.
+            </div>
+</div>
+</footer>
+</main>
+</body></html>

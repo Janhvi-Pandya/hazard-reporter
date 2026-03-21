@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Liquid Ops - Hazard Reporter &amp; Dispatch</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "background": "#0F172A",
+              "surface": "#1E293B",
+              "primary": "#38BDF8",
+              "on-primary": "#0F172A",
+              "secondary": "#94A3B8",
+              "error": "#F43F5E",
+              "warning": "#F59E0B",
+              "success": "#10B981",
+              "outline": "rgba(255, 255, 255, 0.1)",
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0F172A; 
+            color: #F1F5F9; 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.03) 0px, transparent 50%);
+        }
+        .liquid-glass { 
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(24px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .liquid-glass-card { 
+            background: rgba(30, 41, 59, 0.4); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); 
+        }
+        .liquid-glass-card:hover { 
+            transform: translateY(-2px); 
+            background: rgba(30, 41, 59, 0.6); 
+            border-color: rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+        .material-symbols-outlined { 
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; 
+            vertical-align: middle; 
+            transition: transform 0.3s ease; 
+        }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        nav a:hover .material-symbols-outlined { transform: scale(1.1); }
+        .accent-glow-blue { box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.4); }
+        .accent-glow-red { box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.4); }
+        .accent-glow-amber { box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.4); }
+    </style>
+</head>
+<body class="bg-background selection:bg-primary/30">
+<!-- SideNavBar (Rail) -->
+<aside class="h-screen w-20 hover:w-64 transition-all duration-500 fixed left-0 top-0 z-50 flex flex-col py-6 liquid-glass overflow-hidden group">
+<div class="px-6 mb-10 flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-on-primary text-2xl">fluid</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+<h1 class="text-xl font-extrabold tracking-tighter text-white">Liquid Ops</h1>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Observer Mode</p>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-2">
+<a class="flex items-center gap-4 p-3 rounded-xl bg-primary/10 text-primary border-l-4 border-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="warning">warning</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Hazards</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="local_shipping">local_shipping</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Dispatch</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="insights">insights</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Analytics</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-3 space-y-2 pt-6 border-t border-white/5">
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help_outline">help_outline</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Support</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="history">history</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-headline text-sm font-semibold tracking-tight whitespace-nowrap">Logs</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-0 md:left-20 z-40 bg-background/80 backdrop-blur-md flex justify-between items-center px-8 h-16 w-full border-b border-white/5">
+<div class="flex items-center gap-8">
+<span class="text-lg font-black tracking-widest text-white uppercase font-headline">Hazard Reporter</span>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-primary border-b-2 border-primary pb-1 font-headline font-bold transition-all duration-300" href="#">Live Map</a>
+<a class="text-slate-400 hover:text-white font-headline font-semibold transition-all duration-300" href="#">Reports</a>
+<a class="text-slate-400 hover:text-white font-headline font-semibold transition-all duration-300" href="#">Resources</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
+<input class="bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/40 focus:bg-white/10 transition-all text-white placeholder:text-slate-500 outline-none" placeholder="Search incidents..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+<span class="material-symbols-outlined group-hover:scale-110" data-icon="notifications">notifications</span>
+</button>
+<div class="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/20 p-0.5">
+<img alt="User Avatar Dispatcher" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrv4fngXGW82Lty8Xd1MqwL9KJUYo-ID9-ehaAdynOH-bum6xNh2ea3P56FoywxZJHd8CVbpEDAJbmz3FYxXX4ZFgM9IKylzMe6_kEZVDqGOaaqFEJ4_wVktwDp76Afhq7RvBB5KgqYgH24SFWCdoBwcSwjvwIWZ3GyCus4_zZQnELTlWW4t-Rhgpy3WjhkTl35lKOSRT0CKP-qd8yLYHlydERGv6j_P5f7ayLN2cacU3WdvmujBjUwtvpDdKczN3aq51dy1vNah4"/>
+</div>
+<button class="bg-error text-white px-5 py-2 rounded-full font-extrabold text-xs uppercase tracking-widest hover:brightness-110 hover:shadow-lg hover:shadow-error/30 transition-all active:scale-95">
+                Emergency Alert
+            </button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-20 pt-24 pb-12 px-8 min-h-screen">
+<div class="max-w-[1600px] mx-auto space-y-12">
+<!-- Summary Metrics Section -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="liquid-glass-card p-6 rounded-2xl relative overflow-hidden group border-l-4 border-primary accent-glow-blue">
+<div class="relative z-10">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Total Reports</p>
+<h3 class="text-3xl font-extrabold font-headline text-white">1,284</h3>
+<div class="mt-4 flex items-center gap-2 text-xs text-success font-semibold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12% from last shift</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-9xl text-white/5 rotate-12 group-hover:rotate-0 transition-all duration-700 pointer-events-none">description</span>
+</div>
+<div class="liquid-glass-card p-6 rounded-2xl relative overflow-hidden group border-l-4 border-error accent-glow-red">
+<div class="relative z-10">
+<p class="text-[10px] font-bold text-error/70 uppercase tracking-[0.2em] mb-1">Active Incidents</p>
+<h3 class="text-3xl font-extrabold font-headline text-white">42</h3>
+<div class="mt-4 flex items-center gap-2 text-xs text-error font-semibold">
+<span class="material-symbols-outlined text-sm">emergency</span>
+<span>8 requiring air dispatch</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-9xl text-white/5 rotate-12 group-hover:rotate-0 transition-all duration-700 pointer-events-none">warning</span>
+</div>
+<div class="liquid-glass-card p-6 rounded-2xl relative overflow-hidden group border-l-4 border-slate-500">
+<div class="relative z-10">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Avg. Response Time</p>
+<h3 class="text-3xl font-extrabold font-headline text-white">4.8<span class="text-sm font-medium text-slate-500 ml-1">min</span></h3>
+<div class="mt-4 flex items-center gap-2 text-xs text-primary font-semibold">
+<span class="material-symbols-outlined text-sm">speed</span>
+<span>Meeting SLA benchmarks</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-9xl text-white/5 rotate-12 group-hover:rotate-0 transition-all duration-700 pointer-events-none">timer</span>
+</div>
+<div class="liquid-glass-card p-6 rounded-2xl relative overflow-hidden group border-l-4 border-warning accent-glow-amber">
+<div class="relative z-10">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Severity Trend</p>
+<div class="flex items-end gap-1.5 h-10 mt-2">
+<div class="w-2.5 bg-warning/20 h-4 rounded-full transition-all duration-500 group-hover:h-6"></div>
+<div class="w-2.5 bg-warning/40 h-6 rounded-full transition-all duration-500 group-hover:h-8"></div>
+<div class="w-2.5 bg-warning/60 h-8 rounded-full transition-all duration-500 group-hover:h-10"></div>
+<div class="w-2.5 bg-warning h-10 rounded-full transition-all duration-500 group-hover:h-5"></div>
+<div class="w-2.5 bg-warning/80 h-7 rounded-full transition-all duration-500 group-hover:h-9"></div>
+<div class="w-2.5 bg-warning/40 h-5 rounded-full transition-all duration-500 group-hover:h-7"></div>
+</div>
+<div class="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                        Sector 7-G Peak
+                    </div>
+</div>
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-9xl text-white/5 rotate-12 group-hover:rotate-0 transition-all duration-700 pointer-events-none">grid_view</span>
+</div>
+</section>
+<!-- Filters & Main View -->
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<!-- Left Filter Sidebar -->
+<aside class="w-full lg:w-72 shrink-0 space-y-8 sticky top-24">
+<div>
+<h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-4">Incident Status</h4>
+<div class="flex flex-wrap gap-2">
+<button class="px-5 py-2 rounded-full text-xs font-bold bg-primary text-on-primary shadow-lg shadow-primary/20 hover:brightness-110 transition-all">Open</button>
+<button class="px-5 py-2 rounded-full text-xs font-bold bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition-all">In Progress</button>
+<button class="px-5 py-2 rounded-full text-xs font-bold bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition-all">Resolved</button>
+</div>
+</div>
+<div>
+<h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-4">Severity Levels</h4>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+<input checked="" class="w-4 h-4 rounded border-white/10 bg-black/40 text-error focus:ring-error focus:ring-offset-0" type="checkbox"/>
+<span class="text-sm font-bold text-error group-hover:translate-x-1 transition-transform">Urgent</span>
+<span class="ml-auto text-[10px] font-bold text-slate-500">08</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+<input checked="" class="w-4 h-4 rounded border-white/10 bg-black/40 text-warning focus:ring-warning focus:ring-offset-0" type="checkbox"/>
+<span class="text-sm font-bold text-warning group-hover:translate-x-1 transition-transform">High</span>
+<span class="ml-auto text-[10px] font-bold text-slate-500">14</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+<input class="w-4 h-4 rounded border-white/10 bg-black/40 text-amber-300 focus:ring-amber-300 focus:ring-offset-0" type="checkbox"/>
+<span class="text-sm font-bold text-amber-300 group-hover:translate-x-1 transition-transform">Medium</span>
+<span class="ml-auto text-[10px] font-bold text-slate-500">22</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 cursor-pointer transition-all group">
+<input class="w-4 h-4 rounded border-white/10 bg-black/40 text-success focus:ring-success focus:ring-offset-0" type="checkbox"/>
+<span class="text-sm font-bold text-success group-hover:translate-x-1 transition-transform">Low</span>
+<span class="ml-auto text-[10px] font-bold text-slate-500">59</span>
+</label>
+</div>
+</div>
+<div class="p-6 rounded-2xl liquid-glass-card border-primary/20 bg-primary/5">
+<h4 class="text-xs font-black text-primary uppercase tracking-widest mb-2">Operational Insight</h4>
+<p class="text-xs text-slate-400 leading-relaxed font-medium">System suggests increasing dispatch capacity in Central District due to rising humidity-related technical failures.</p>
+<button class="mt-4 text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:underline underline-offset-8 transition-all">View Analytics</button>
+</div>
+</aside>
+<!-- Incident List -->
+<div class="flex-1 space-y-6 w-full">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-extrabold font-headline text-white tracking-tight">Active Dispatch Queue</h2>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sort by:</span>
+<button class="text-xs font-bold text-slate-300 flex items-center gap-1 hover:text-primary transition-colors">
+                            Newest First <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Incident Cards -->
+<div class="space-y-4">
+<!-- Card 1 -->
+<div class="group liquid-glass-card rounded-2xl p-6 relative overflow-hidden border-l-4 border-error">
+<div class="flex flex-col md:flex-row md:items-center gap-6 relative z-10">
+<div class="shrink-0 text-center md:w-24">
+<span class="block text-[10px] font-bold uppercase tracking-tighter text-slate-500 mb-2">ID #4920</span>
+<div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-error/10 text-error border border-error/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg shadow-error/10">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">emergency</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<h3 class="text-lg font-bold text-white tracking-tight">Critical Structural Failure</h3>
+<span class="bg-error/20 text-error text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-error/30">Urgent</span>
+</div>
+<p class="text-sm text-slate-400 mb-4 max-w-2xl leading-relaxed font-medium">Reported fissure in Sector 4 Main Pipeline. Potential for high-velocity liquid discharge. Evacuation initiated in Perimeter A.</p>
+<div class="flex flex-wrap gap-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+<div class="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Sector 4 - Alpha</span>
+</div>
+<div class="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">
+<span class="material-symbols-outlined text-base">router</span>
+<span>Ground Response A</span>
+</div>
+<div class="flex items-center gap-2 text-error">
+<span class="material-symbols-outlined text-base">schedule</span>
+<span>2m ago</span>
+</div>
+</div>
+</div>
+<div class="flex md:flex-col gap-3 shrink-0">
+<button class="px-8 py-3 bg-primary text-on-primary rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95">Dispatch</button>
+<button class="px-6 py-3 bg-white/5 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors">Details</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group liquid-glass-card rounded-2xl p-6 relative overflow-hidden border-l-4 border-warning">
+<div class="flex flex-col md:flex-row md:items-center gap-6 relative z-10">
+<div class="shrink-0 text-center md:w-24">
+<span class="block text-[10px] font-bold uppercase tracking-tighter text-slate-500 mb-2">ID #4918</span>
+<div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-warning/10 text-warning border border-warning/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg shadow-warning/10">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<h3 class="text-lg font-bold text-white tracking-tight">Unidentified Spill Detected</h3>
+<span class="bg-warning/20 text-warning text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-warning/30">High</span>
+</div>
+<p class="text-sm text-slate-400 mb-4 max-w-2xl leading-relaxed font-medium">Automated drone sweep identified 50L of high-viscosity fluid in Loading Bay 3. Containment units standing by.</p>
+<div class="flex flex-wrap gap-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+<div class="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Loading Bay 3</span>
+</div>
+<div class="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">
+<span class="material-symbols-outlined text-base">router</span>
+<span>Hazmat Cleanup</span>
+</div>
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-base">schedule</span>
+<span>14m ago</span>
+</div>
+</div>
+</div>
+<div class="flex md:flex-col gap-3 shrink-0">
+<button class="px-8 py-3 bg-primary text-on-primary rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95">Dispatch</button>
+<button class="px-6 py-3 bg-white/5 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors">Details</button>
+</div>
+</div>
+</div>
+<!-- Card 3 (In Progress) -->
+<div class="group liquid-glass-card rounded-2xl p-6 relative overflow-hidden bg-white/5 border-l-4 border-slate-500">
+<div class="flex flex-col md:flex-row md:items-center gap-6 relative z-10">
+<div class="shrink-0 text-center md:w-24">
+<span class="block text-[10px] font-bold uppercase tracking-tighter text-slate-500 mb-2">ID #4912</span>
+<div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5 text-slate-400 border border-white/10 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg shadow-white/5">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">sync</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<h3 class="text-lg font-bold text-white tracking-tight">Minor Road Hazard</h3>
+<span class="bg-white/10 text-slate-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-white/10">In Progress</span>
+</div>
+<p class="text-sm text-slate-400 mb-4 max-w-2xl leading-relaxed font-medium">Debris cleared from Lane 2. Final sweep in progress by Unit 09. Expected resolution in 10 minutes.</p>
+<div class="flex flex-wrap gap-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+<div class="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Hwy 09</span>
+</div>
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-base">person</span>
+<span>Op: Sarah L.</span>
+</div>
+</div>
+</div>
+<div class="flex md:flex-col gap-3 shrink-0">
+<button class="px-6 py-3 bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-all">Monitor</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Interaction Hint (Bottom Right) -->
+<div class="fixed bottom-8 right-8 z-30 flex items-center gap-4">
+<div class="liquid-glass-card bg-slate-900/60 p-4 px-6 rounded-2xl flex items-center gap-4 shadow-2xl border border-white/10">
+<div class="w-2.5 h-2.5 rounded-full bg-success animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
+<span class="text-[10px] font-black text-white uppercase tracking-[0.2em]">Operational Status: Nominal</span>
+</div>
+<button class="w-16 h-16 rounded-2xl bg-primary text-on-primary flex items-center justify-center shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all duration-300 group backdrop-blur-md">
+<span class="material-symbols-outlined text-4xl group-hover:rotate-90 transition-transform" data-icon="add">add</span>
+</button>
+</div>
+<!-- Footer -->
+<footer class="ml-20 border-t border-white/5 bg-background/50 backdrop-blur-xl">
+<div class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center px-8 py-12 gap-6">
+<p class="font-bold text-[10px] uppercase tracking-[0.3em] text-slate-600">© 2024 Liquid Operational Intelligence. Tier 1 Access.</p>
+<div class="flex gap-8">
+<a class="font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-colors" href="#">Security Protocols</a>
+<a class="font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-colors" href="#">Terms of Access</a>
+<a class="font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-colors" href="#">Node Status</a>
+<a class="font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-colors" href="#">Contact Central</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -5,7 +5,12 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(npx vite:*)",
       "Bash(gh auth:*)",
-      "Bash(curl -s http://localhost:3001/api/ai/analyze)"
+      "Bash(curl -s http://localhost:3001/api/ai/analyze)",
+      "Bash(unzip -l \"C:/Users/Pandya/Downloads/stitch_report_an_issue.zip\")",
+      "Bash(unzip -o \"C:/Users/Pandya/Downloads/stitch_report_an_issue.zip\" -d \"C:/Users/Pandya/Downloads/keriu/design-ref\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
