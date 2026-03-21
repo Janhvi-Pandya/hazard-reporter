@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0b1326;
+  color: #dae2fd;
+}
+
+/* Liquid Glass Design System */
+.liquid-glass {
+  background: rgba(23, 31, 51, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ghost-border {
+  border: 1px solid rgba(144, 144, 151, 0.15);
+}
+
+.liquid-border {
+  border: 1px solid rgba(144, 144, 151, 0.15);
+}
+
+.cta-gradient {
+  background: linear-gradient(135deg, #adc6ff 0%, #004395 100%);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% 50%, rgba(53, 125, 241, 0.15) 0%, rgba(11, 19, 38, 0) 70%);
+}
+
+.glass-panel {
+  backdrop-filter: blur(12px);
+  background: rgba(23, 31, 51, 0.7);
+}
+
+/* Custom scrollbar (dark theme) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d3449;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #45464d;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2d3449 transparent;
+}
+
+/* Utility animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s ease-in-out infinite;
+}
