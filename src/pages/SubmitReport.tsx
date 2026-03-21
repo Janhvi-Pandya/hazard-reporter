@@ -30,6 +30,7 @@ import {
 import type { Category, Urgency, Incident } from '../types'
 import { submitReport, getIncidents } from '../api'
 import LocationPicker from '../components/LocationPicker'
+import { useAuth } from '../context/AuthContext'
 
 const CATEGORIES: { value: Category; label: string; icon: React.ReactNode }[] = [
   { value: 'electrical', label: 'Electrical', icon: <Zap className="w-4 h-4" /> },
@@ -104,6 +105,7 @@ interface FormErrors {
 
 export default function SubmitReport() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [category, setCategory] = useState<Category | ''>('')
   const [title, setTitle] = useState('')
@@ -113,9 +115,9 @@ export default function SubmitReport() {
   const [locationDetail, setLocationDetail] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [reporterName, setReporterName] = useState('')
-  const [reporterEmail, setReporterEmail] = useState('')
-  const [reporterPhone, setReporterPhone] = useState('')
+  const [reporterName, setReporterName] = useState(user?.full_name || '')
+  const [reporterEmail, setReporterEmail] = useState(user?.email || '')
+  const [reporterPhone, setReporterPhone] = useState(user?.phone || '')
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
 
@@ -215,6 +217,7 @@ export default function SubmitReport() {
       formData.append('reported_by_phone', reporterPhone.trim())
       if (latitude !== null) formData.append('latitude', latitude.toString())
       if (longitude !== null) formData.append('longitude', longitude.toString())
+      if (user?.id) formData.append('reported_by_user_id', user.id)
       if (photo) formData.append('photo', photo)
       const incident = await submitReport(formData)
       setResult(incident)

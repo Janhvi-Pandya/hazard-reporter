@@ -29,6 +29,7 @@ export interface Incident {
   reported_by_name: string
   reported_by_email: string
   reported_by_phone: string
+  reported_by_user_id?: string | null
   photo_url: string | null
   assigned_team: string
   assigned_to: string | null

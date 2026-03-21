@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Routes, Route, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, createContext, useContext } from 'react'
+import { Routes, Route, NavLink, Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -16,6 +16,8 @@ import {
   Map,
   FileText,
   BookOpen,
+  Shield,
+  UserCog,
 } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import SubmitReport from './pages/SubmitReport'
@@ -26,9 +28,26 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 
+// ── View Mode Context ──
+type ViewMode = 'admin' | 'user'
+interface ViewModeContextType {
+  viewMode: ViewMode
+  setViewMode: (m: ViewMode) => void
+}
+const ViewModeContext = createContext<ViewModeContextType>({ viewMode: 'admin', setViewMode: () => {} })
+export function useViewMode() { return useContext(ViewModeContext) }
+
+// ── Protected Route wrapper ──
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/', label: 'Report Hazard', icon: FileWarning, end: true },
+  { to: '/report', label: 'Report Hazard', icon: FileWarning },
   { to: '/track', label: 'Track Report', icon: Search },
 ] as const
 
@@ -62,8 +81,8 @@ function Sidebar() {
 
       {/* Nav links */}
       <nav className="flex-1 space-y-2 px-3">
-        {sidebarLinks.map(({ to, label, icon: Icon, end }) => {
-          const active = isActive(to, end)
+        {sidebarLinks.map(({ to, label, icon: Icon }) => {
+          const active = isActive(to)
           return (
             <NavLink
               key={to}
@@ -121,6 +140,7 @@ function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { viewMode, setViewMode } = useViewMode()
 
   const isActive = (to: string, end?: boolean) => {
     if (end) return location.pathname === to
@@ -168,8 +188,36 @@ function TopBar() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
+          {/* Admin / User Mode Toggle — admin only */}
+          {user && user.role === 'admin' && (
+            <div className="hidden sm:flex items-center bg-surface-container-highest/50 rounded-full p-0.5 border border-outline-variant/20">
+              <button
+                onClick={() => setViewMode('admin')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  viewMode === 'admin'
+                    ? 'bg-primary/20 text-primary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Admin
+              </button>
+              <button
+                onClick={() => setViewMode('user')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  viewMode === 'user'
+                    ? 'bg-primary/20 text-primary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <UserCog className="w-3.5 h-3.5" />
+                User
+              </button>
+            </div>
+          )}
+
           <Link
-            to="/"
+            to="/report"
             className="bg-on-tertiary-container text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all active:scale-95 hidden sm:block"
           >
             Emergency Alert
@@ -183,7 +231,7 @@ function TopBar() {
                   <span className="text-xs text-slate-400 hidden lg:block">{user.full_name || user.username}</span>
                 </Link>
                 <button
-                  onClick={() => { logout(); navigate('/login') }}
+                  onClick={() => { logout(); navigate('/') }}
                   className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   title="Sign out"
                 >
@@ -191,7 +239,7 @@ function TopBar() {
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="flex items-center gap-1.5 text-slate-400 hover:text-blue-200 transition-colors">
+              <Link to="/" className="flex items-center gap-1.5 text-slate-400 hover:text-blue-200 transition-colors">
                 <LogIn className="w-5 h-5" />
                 <span className="text-xs hidden lg:block">Sign In</span>
               </Link>
@@ -210,8 +258,37 @@ function TopBar() {
               </div>
               <p className="text-xl font-bold tracking-tighter text-blue-200 font-headline">Hazard Reporter</p>
             </div>
-            {sidebarLinks.map(({ to, label, icon: Icon, end }) => {
-              const active = isActive(to, end)
+
+            {/* Mobile Admin/User Toggle */}
+            {user && user.role === 'admin' && (
+              <div className="flex items-center bg-surface-container-highest/50 rounded-full p-0.5 border border-outline-variant/20 mb-4">
+                <button
+                  onClick={() => setViewMode('admin')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                    viewMode === 'admin'
+                      ? 'bg-primary/20 text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  Admin
+                </button>
+                <button
+                  onClick={() => setViewMode('user')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                    viewMode === 'user'
+                      ? 'bg-primary/20 text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <UserCog className="w-3.5 h-3.5" />
+                  User
+                </button>
+              </div>
+            )}
+
+            {sidebarLinks.map(({ to, label, icon: Icon }) => {
+              const active = isActive(to)
               return (
                 <NavLink
                   key={to}
@@ -236,14 +313,14 @@ function TopBar() {
                     <User className="w-5 h-5" />
                     <span className="font-semibold text-sm font-headline">Profile</span>
                   </NavLink>
-                  <button onClick={() => { logout(); navigate('/login'); setMobileOpen(false) }}
+                  <button onClick={() => { logout(); navigate('/'); setMobileOpen(false) }}
                     className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors w-full">
                     <LogOut className="w-5 h-5" />
                     <span className="font-semibold text-sm font-headline">Sign Out</span>
                   </button>
                 </>
               ) : (
-                <NavLink to="/login" onClick={() => setMobileOpen(false)}
+                <NavLink to="/" onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
                   <LogIn className="w-5 h-5" />
                   <span className="font-semibold text-sm font-headline">Sign In</span>
@@ -258,21 +335,47 @@ function TopBar() {
 }
 
 export default function App() {
+  const { user, loading } = useAuth()
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    // Default: admin sees admin mode, reporter sees user mode
+    'admin'
+  )
+
+  // Determine effective view mode: reporters always in user mode
+  const effectiveViewMode: ViewMode = user?.role === 'admin' ? viewMode : 'user'
+
   return (
-    <div className="min-h-screen bg-background text-on-surface">
-      <Sidebar />
-      <TopBar />
-      <main className="md:ml-20 pt-16 min-h-screen">
-        <Routes>
-          <Route path="/" element={<SubmitReport />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/incidents/:id" element={<IncidentDetail />} />
-          <Route path="/track" element={<TrackReport />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </main>
-    </div>
+    <ViewModeContext.Provider value={{ viewMode: effectiveViewMode, setViewMode }}>
+      <div className="min-h-screen bg-background text-on-surface">
+        {/* Only show sidebar/topbar when authenticated */}
+        {!loading && user && (
+          <>
+            <Sidebar />
+            <TopBar />
+          </>
+        )}
+        <main className={user ? 'md:ml-20 pt-16 min-h-screen' : 'min-h-screen'}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={
+              !loading && user ? <Navigate to="/dashboard" replace /> : <Login />
+            } />
+            <Route path="/login" element={
+              !loading && user ? <Navigate to="/dashboard" replace /> : <Login />
+            } />
+            <Route path="/register" element={
+              !loading && user ? <Navigate to="/dashboard" replace /> : <Register />
+            } />
+
+            {/* Protected routes */}
+            <Route path="/report" element={<ProtectedRoute><SubmitReport /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/incidents/:id" element={<ProtectedRoute><IncidentDetail /></ProtectedRoute>} />
+            <Route path="/track" element={<ProtectedRoute><TrackReport /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          </Routes>
+        </main>
+      </div>
+    </ViewModeContext.Provider>
   )
 }

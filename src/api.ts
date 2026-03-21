@@ -25,6 +25,7 @@ export interface IncidentFilters {
   search?: string
   sort?: string
   order?: string
+  reported_by_user_id?: string
 }
 
 export async function getIncidents(filters?: IncidentFilters): Promise<Incident[]> {

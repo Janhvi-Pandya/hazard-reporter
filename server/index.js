@@ -130,6 +130,7 @@ db.run(`
     reported_by_name TEXT,
     reported_by_email TEXT,
     reported_by_phone TEXT,
+    reported_by_user_id TEXT,
     photo_url TEXT,
     severity TEXT CHECK(severity IN ('critical','high','medium','low')),
     status TEXT DEFAULT 'reported' CHECK(status IN ('reported','acknowledged','dispatched','in_progress','resolved','closed')),
@@ -173,6 +174,7 @@ db.run(`
 // Add latitude/longitude columns to existing incidents table if missing
 try { db.run('ALTER TABLE incidents ADD COLUMN latitude REAL'); } catch (e) { /* column already exists */ }
 try { db.run('ALTER TABLE incidents ADD COLUMN longitude REAL'); } catch (e) { /* column already exists */ }
+try { db.run('ALTER TABLE incidents ADD COLUMN reported_by_user_id TEXT'); } catch (e) { /* column already exists */ }
 
 // --- Seed data ---
 function seedDatabase() {
@@ -572,7 +574,7 @@ app.post('/api/uploads', upload.single('photo'), (req, res) => {
 app.post('/api/reports', upload.single('photo'), (req, res) => {
   try {
     const { title, description, category, location, location_detail,
-      reported_by_name, reported_by_email, reported_by_phone, urgency, latitude, longitude } = req.body;
+      reported_by_name, reported_by_email, reported_by_phone, reported_by_user_id, urgency, latitude, longitude } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
 
     const classification = classifySeverity(category || 'other', description || '', urgency || '');
@@ -586,11 +588,11 @@ app.post('/api/reports', upload.single('photo'), (req, res) => {
 
     run(
       `INSERT INTO incidents (id, title, description, category, location, location_detail,
-        reported_by_name, reported_by_email, reported_by_phone, photo_url, severity, status,
+        reported_by_name, reported_by_email, reported_by_phone, reported_by_user_id, photo_url, severity, status,
         assigned_team, assigned_to, created_at, updated_at, resolved_at, tracking_code, latitude, longitude)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reported', ?, NULL, ?, ?, NULL, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reported', ?, NULL, ?, ?, NULL, ?, ?, ?)`,
       [id, title, description || null, category || 'other', location || null, location_detail || null,
-       reported_by_name || null, reported_by_email || null, reported_by_phone || null, photoUrl,
+       reported_by_name || null, reported_by_email || null, reported_by_phone || null, reported_by_user_id || null, photoUrl,
        classification.severity, classification.assigned_team, now, now, trackingCode, lat, lng]
     );
 
@@ -621,6 +623,7 @@ app.get('/api/incidents', (req, res) => {
     if (severity) { conditions.push('severity = ?'); params.push(severity); }
     if (category) { conditions.push('category = ?'); params.push(category); }
     if (assigned_team) { conditions.push('assigned_team = ?'); params.push(assigned_team); }
+    if (req.query.reported_by_user_id) { conditions.push('reported_by_user_id = ?'); params.push(req.query.reported_by_user_id); }
     if (search) {
       conditions.push('(title LIKE ? OR description LIKE ?)');
       params.push(`%${search}%`, `%${search}%`);

@@ -21,6 +21,8 @@ import type { IncidentFilters } from '../api'
 import type { Incident, IncidentStats, Status, Severity, Category } from '../types'
 import AIInsights from '../components/AIInsights'
 import IncidentMap from '../components/IncidentMap'
+import { useAuth } from '../context/AuthContext'
+import { useViewMode } from '../App'
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -106,6 +108,10 @@ export default function Dashboard() {
   const [showMap, setShowMap] = useState(false)
   const [showAI, setShowAI] = useState(true)
 
+  const { user } = useAuth()
+  const { viewMode } = useViewMode()
+  const isUserMode = viewMode === 'user'
+
   const activeFilterCount = [statusFilter, severityFilter, categoryFilter, searchQuery].filter(Boolean).length
 
   const fetchData = useCallback(async () => {
@@ -116,6 +122,10 @@ export default function Dashboard() {
       if (severityFilter) filters.severity = severityFilter
       if (categoryFilter) filters.category = categoryFilter
       if (searchQuery) filters.search = searchQuery
+      // In user mode, only fetch incidents created by the logged-in user
+      if (isUserMode && user?.id) {
+        filters.reported_by_user_id = user.id
+      }
       const [incidentData, statsData] = await Promise.all([getIncidents(filters), getIncidentStats()])
       setIncidents(incidentData)
       setStats(statsData)
@@ -124,7 +134,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, severityFilter, categoryFilter, searchQuery])
+  }, [statusFilter, severityFilter, categoryFilter, searchQuery, isUserMode, user?.id])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -239,18 +249,20 @@ export default function Dashboard() {
 
         {/* Toggle Buttons */}
         <div className="flex gap-3">
-          <button onClick={() => setShowAI(!showAI)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${showAI ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-surface-container-high text-slate-400 border border-outline-variant/20 hover:bg-surface-container-highest'}`}>
-            <Brain className="w-4 h-4" /> AI Analysis
-          </button>
+          {!isUserMode && (
+            <button onClick={() => setShowAI(!showAI)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${showAI ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-surface-container-high text-slate-400 border border-outline-variant/20 hover:bg-surface-container-highest'}`}>
+              <Brain className="w-4 h-4" /> AI Analysis
+            </button>
+          )}
           <button onClick={() => setShowMap(!showMap)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${showMap ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-surface-container-high text-slate-400 border border-outline-variant/20 hover:bg-surface-container-highest'}`}>
             <Map className="w-4 h-4" /> Incident Map
           </button>
         </div>
 
-        {/* AI Insights Panel */}
-        {showAI && !loading && incidents.length > 0 && (
+        {/* AI Insights Panel — admin only */}
+        {!isUserMode && showAI && !loading && incidents.length > 0 && (
           <AIInsights incidents={incidents} />
         )}
 
@@ -370,7 +382,7 @@ export default function Dashboard() {
           {/* Right: Incident Queue */}
           <section className="flex-1 min-w-0">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold font-headline tracking-tight text-blue-100">Active Incident Queue</h2>
+              <h2 className="text-xl font-bold font-headline tracking-tight text-blue-100">{isUserMode ? 'My Reports' : 'Active Incident Queue'}</h2>
               <span className="text-xs text-slate-500">{sortedIncidents.length} incidents</span>
             </div>
 

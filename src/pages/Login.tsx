@@ -12,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginMode, setLoginMode] = useState<'user' | 'admin'>('user')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -49,6 +50,32 @@ export default function Login() {
             {error}
           </div>
         )}
+
+        {/* Login Mode Toggle */}
+        <div className="flex p-1 bg-surface-container-highest/40 rounded-xl mb-6 border border-outline-variant/20">
+          <button
+            type="button"
+            onClick={() => { setLoginMode('user'); setUsername(''); setPassword(''); setError(''); }}
+            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+              loginMode === 'user'
+                ? 'bg-primary/20 text-primary shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            User Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setLoginMode('admin'); setUsername('admin'); setPassword(''); setError(''); }}
+            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+              loginMode === 'admin'
+                ? 'bg-primary/20 text-primary shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Admin Sign In
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Username */}
@@ -98,7 +125,7 @@ export default function Login() {
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                Sign In
+                {loginMode === 'admin' ? 'Sign In as Admin' : 'Sign In as User'}
               </>
             )}
           </button>
