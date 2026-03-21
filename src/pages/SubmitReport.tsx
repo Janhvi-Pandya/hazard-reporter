@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import type { Category, Urgency, Incident } from '../types'
 import { submitReport } from '../api'
+import LocationPicker from '../components/LocationPicker'
 
 const CATEGORIES: { value: Category; label: string; icon: React.ReactNode }[] = [
   { value: 'electrical', label: 'Electrical', icon: <Zap className="w-4 h-4" /> },
@@ -113,6 +114,8 @@ export default function SubmitReport() {
   const [reporterName, setReporterName] = useState('')
   const [reporterEmail, setReporterEmail] = useState('')
   const [reporterPhone, setReporterPhone] = useState('')
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
 
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -180,6 +183,8 @@ export default function SubmitReport() {
       formData.append('reported_by_name', reporterName.trim())
       formData.append('reported_by_email', reporterEmail.trim())
       formData.append('reported_by_phone', reporterPhone.trim())
+      if (latitude !== null) formData.append('latitude', latitude.toString())
+      if (longitude !== null) formData.append('longitude', longitude.toString())
       if (photo) formData.append('photo', photo)
       const incident = await submitReport(formData)
       setResult(incident)
@@ -202,6 +207,8 @@ export default function SubmitReport() {
     setReporterName('')
     setReporterEmail('')
     setReporterPhone('')
+    setLatitude(null)
+    setLongitude(null)
     setErrors({})
     setSubmitError('')
     setResult(null)
@@ -403,6 +410,23 @@ export default function SubmitReport() {
                   className={inputClasses()}
                 />
               </div>
+            </div>
+
+            {/* Map Location Picker */}
+            <div className="space-y-3">
+              <label className="font-label text-[10px] uppercase tracking-widest text-primary font-bold">Pin Location on Map</label>
+              <LocationPicker
+                onLocationSelect={(lat, lng, addr) => {
+                  setLatitude(lat)
+                  setLongitude(lng)
+                  if (addr && !location) setLocation(addr)
+                }}
+              />
+              {latitude !== null && longitude !== null && (
+                <p className="text-xs text-slate-500">
+                  Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                </p>
+              )}
             </div>
 
             {/* Photo Upload */}

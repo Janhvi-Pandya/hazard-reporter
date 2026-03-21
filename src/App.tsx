@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
+import { Routes, Route, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -10,11 +10,18 @@ import {
   UserCircle,
   HelpCircle,
   FileWarning,
+  LogOut,
+  LogIn,
+  User,
 } from 'lucide-react'
+import { useAuth } from './context/AuthContext'
 import SubmitReport from './pages/SubmitReport'
 import Dashboard from './pages/Dashboard'
 import IncidentDetail from './pages/IncidentDetail'
 import TrackReport from './pages/TrackReport'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Profile from './pages/Profile'
 
 const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -38,8 +45,8 @@ function Sidebar() {
           <AlertTriangle className="w-4 h-4 text-on-primary" />
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          <p className="text-xl font-bold tracking-tighter text-blue-200 font-headline">Liquid Ops</p>
-          <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Operational Intel</p>
+          <p className="text-xl font-bold tracking-tighter text-blue-200 font-headline">Hazard Reporter</p>
+          <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Incident Management</p>
         </div>
       </div>
 
@@ -80,6 +87,8 @@ function Sidebar() {
 function TopBar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
   const isActive = (to: string, end?: boolean) => {
     if (end) return location.pathname === to
@@ -108,7 +117,26 @@ function TopBar() {
           </Link>
           <div className="flex items-center gap-3 border-l border-slate-800/50 pl-4">
             <Bell className="w-5 h-5 text-slate-400 cursor-pointer hover:text-blue-200 transition-colors" />
-            <UserCircle className="w-5 h-5 text-slate-400 cursor-pointer hover:text-blue-200 transition-colors" />
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link to="/profile" className="flex items-center gap-2 hover:text-blue-200 transition-colors">
+                  <UserCircle className="w-5 h-5 text-slate-400 hover:text-blue-200" />
+                  <span className="text-xs text-slate-400 hidden lg:block">{user.full_name || user.username}</span>
+                </Link>
+                <button
+                  onClick={() => { logout(); navigate('/login') }}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="flex items-center gap-1.5 text-slate-400 hover:text-blue-200 transition-colors">
+                <LogIn className="w-5 h-5" />
+                <span className="text-xs hidden lg:block">Sign In</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -121,7 +149,7 @@ function TopBar() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-on-primary-container flex items-center justify-center">
                 <AlertTriangle className="w-4 h-4 text-on-primary" />
               </div>
-              <p className="text-xl font-bold tracking-tighter text-blue-200 font-headline">Liquid Ops</p>
+              <p className="text-xl font-bold tracking-tighter text-blue-200 font-headline">Hazard Reporter</p>
             </div>
             {sidebarLinks.map(({ to, label, icon: Icon, end }) => {
               const active = isActive(to, end)
@@ -141,6 +169,28 @@ function TopBar() {
                 </NavLink>
               )
             })}
+            <div className="border-t border-slate-800/40 pt-4 mt-4">
+              {user ? (
+                <>
+                  <NavLink to="/profile" onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <User className="w-5 h-5" />
+                    <span className="font-semibold text-sm font-headline">Profile</span>
+                  </NavLink>
+                  <button onClick={() => { logout(); navigate('/login'); setMobileOpen(false) }}
+                    className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors w-full">
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-semibold text-sm font-headline">Sign Out</span>
+                  </button>
+                </>
+              ) : (
+                <NavLink to="/login" onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                  <LogIn className="w-5 h-5" />
+                  <span className="font-semibold text-sm font-headline">Sign In</span>
+                </NavLink>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -159,6 +209,9 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/incidents/:id" element={<IncidentDetail />} />
           <Route path="/track" element={<TrackReport />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
     </div>

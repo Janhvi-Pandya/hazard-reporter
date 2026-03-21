@@ -17,12 +17,65 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const dbPath = path.join(__dirname, 'hazard.db');
 
+const JWT_SECRET = 'hazard-reporter-secret-key-2024';
+const SALT_LENGTH = 16;
+const PBKDF2_ITERATIONS = 100000;
+const PBKDF2_KEYLEN = 64;
+const PBKDF2_DIGEST = 'sha512';
+const TOKEN_EXPIRY_HOURS = 24;
+
 function generateId() {
   return 'HZ-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
 function generateTrackingCode() {
   return 'TRK-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+// --- Password hashing ---
+function hashPassword(password) {
+  const salt = crypto.randomBytes(SALT_LENGTH).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, stored) {
+  const [salt, hash] = stored.split(':');
+  const verify = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST).toString('hex');
+  return hash === verify;
+}
+
+// --- Token generation / verification ---
+function createToken(payload) {
+  const data = { ...payload, exp: Date.now() + TOKEN_EXPIRY_HOURS * 3600000 };
+  const payloadB64 = Buffer.from(JSON.stringify(data)).toString('base64');
+  const signature = crypto.createHmac('sha256', JWT_SECRET).update(payloadB64).digest('base64');
+  return `${payloadB64}.${signature}`;
+}
+
+function verifyToken(token) {
+  try {
+    const [payloadB64, signature] = token.split('.');
+    if (!payloadB64 || !signature) return null;
+    const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(payloadB64).digest('base64');
+    if (signature !== expectedSig) return null;
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString());
+    if (payload.exp && payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// --- Auth middleware ---
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).json({ error: 'Authorization header required' });
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+  const payload = verifyToken(token);
+  if (!payload) return res.status(401).json({ error: 'Invalid or expired token' });
+  req.user = payload;
+  next();
 }
 
 // --- Initialize sql.js and database ---
@@ -85,7 +138,9 @@ db.run(`
     created_at TEXT,
     updated_at TEXT,
     resolved_at TEXT,
-    tracking_code TEXT UNIQUE
+    tracking_code TEXT UNIQUE,
+    latitude REAL,
+    longitude REAL
   )
 `);
 
@@ -100,6 +155,24 @@ db.run(`
     created_at TEXT
   )
 `);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT CHECK(role IN ('admin','reporter')) DEFAULT 'reporter',
+    full_name TEXT,
+    phone TEXT,
+    avatar_url TEXT,
+    created_at TEXT
+  )
+`);
+
+// Add latitude/longitude columns to existing incidents table if missing
+try { db.run('ALTER TABLE incidents ADD COLUMN latitude REAL'); } catch (e) { /* column already exists */ }
+try { db.run('ALTER TABLE incidents ADD COLUMN longitude REAL'); } catch (e) { /* column already exists */ }
 
 // --- Seed data ---
 function seedDatabase() {
@@ -133,12 +206,12 @@ function seedDatabase() {
     run(
       `INSERT INTO incidents (id, title, description, category, location, location_detail,
         reported_by_name, reported_by_email, reported_by_phone, photo_url, severity, status,
-        assigned_team, assigned_to, created_at, updated_at, resolved_at, tracking_code)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        assigned_team, assigned_to, created_at, updated_at, resolved_at, tracking_code, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, seed.title, seed.description, seed.category, seed.location, seed.location_detail,
        seed.reported_by_name, seed.reported_by_email, seed.reported_by_phone, null,
        seed.severity, seed.status, seed.assigned_team, seed.assigned_to || null,
-       seed.created_at, seed.updated_at, seed.resolved_at || null, trackingCode]
+       seed.created_at, seed.updated_at, seed.resolved_at || null, trackingCode, null, null]
     );
 
     run(
@@ -162,7 +235,27 @@ function seedDatabase() {
   console.log(`Seeded ${seeds.length} sample incidents.`);
 }
 
+// --- Seed default admin user ---
+function seedAdminUser() {
+  const existing = getRow('SELECT COUNT(*) AS c FROM users WHERE username = ?', ['admin']);
+  if (existing.c > 0) return;
+
+  const id = 'USR-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+  const passwordHash = hashPassword('admin123');
+  const now = new Date().toISOString();
+
+  run(
+    `INSERT INTO users (id, username, email, password_hash, role, full_name, phone, avatar_url, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, 'admin', 'admin@hazardreporter.com', passwordHash, 'admin', 'System Administrator', null, null, now]
+  );
+
+  saveDb();
+  console.log('Seeded default admin user.');
+}
+
 seedDatabase();
+seedAdminUser();
 
 // --- Express ---
 const app = express();
@@ -198,6 +291,279 @@ const upload = multer({
 
 // --- API Routes ---
 
+// === Auth Routes ===
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { username, email, password, full_name, phone, role } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+
+    const existingUser = getRow('SELECT id FROM users WHERE username = ? OR email = ?', [username, email]);
+    if (existingUser) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
+
+    const id = 'USR-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+    const passwordHash = hashPassword(password);
+    const now = new Date().toISOString();
+    const userRole = (role === 'admin' || role === 'reporter') ? role : 'reporter';
+
+    run(
+      `INSERT INTO users (id, username, email, password_hash, role, full_name, phone, avatar_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, username, email, passwordHash, userRole, full_name || null, phone || null, null, now]
+    );
+    saveDb();
+
+    const token = createToken({ id, username, role: userRole });
+
+    res.status(201).json({
+      token,
+      user: { id, username, email, role: userRole, full_name: full_name || null, phone: phone || null, avatar_url: null, created_at: now }
+    });
+  } catch (err) {
+    console.error('Error registering user:', err);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const user = getRow('SELECT * FROM users WHERE username = ?', [username]);
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const token = createToken({ id: user.id, username: user.username, role: user.role });
+
+    res.json({
+      token,
+      user: { id: user.id, username: user.username, email: user.email, role: user.role, full_name: user.full_name, phone: user.phone, avatar_url: user.avatar_url, created_at: user.created_at }
+    });
+  } catch (err) {
+    console.error('Error logging in:', err);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+app.get('/api/auth/profile', authenticateToken, (req, res) => {
+  try {
+    const user = getRow('SELECT id, username, email, role, full_name, phone, avatar_url, created_at FROM users WHERE id = ?', [req.user.id]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error('Error getting profile:', err);
+    res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+app.patch('/api/auth/profile', authenticateToken, (req, res) => {
+  try {
+    const { full_name, email, phone } = req.body;
+    const updates = [];
+    const params = [];
+
+    if (full_name !== undefined) { updates.push('full_name = ?'); params.push(full_name); }
+    if (email !== undefined) {
+      const existing = getRow('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.id]);
+      if (existing) return res.status(409).json({ error: 'Email already in use' });
+      updates.push('email = ?');
+      params.push(email);
+    }
+    if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
+
+    if (updates.length === 0) {
+      const user = getRow('SELECT id, username, email, role, full_name, phone, avatar_url, created_at FROM users WHERE id = ?', [req.user.id]);
+      return res.json(user);
+    }
+
+    params.push(req.user.id);
+    run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    saveDb();
+
+    const user = getRow('SELECT id, username, email, role, full_name, phone, avatar_url, created_at FROM users WHERE id = ?', [req.user.id]);
+    res.json(user);
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// === AI Analysis Routes ===
+
+app.get('/api/ai/analyze', (req, res) => {
+  try {
+    const incidents = allRows('SELECT * FROM incidents');
+    if (incidents.length === 0) {
+      return res.json({ risk_score: 0, trend_analysis: [], hotspot_locations: [], recommendations: [] });
+    }
+
+    const total = incidents.length;
+    const critical = incidents.filter(i => i.severity === 'critical').length;
+    const high = incidents.filter(i => i.severity === 'high').length;
+    const medium = incidents.filter(i => i.severity === 'medium').length;
+    const low = incidents.filter(i => i.severity === 'low').length;
+    const active = incidents.filter(i => !['resolved', 'closed'].includes(i.status)).length;
+
+    // Risk score: weighted severity + active ratio
+    const risk_score = Math.min(100, Math.round(
+      ((critical * 40 + high * 25 + medium * 10 + low * 2) / total) * (active / Math.max(total, 1)) * 100 + (critical > 0 ? 20 : 0)
+    ));
+
+    // Trend analysis: group by category
+    const categoryMap = {};
+    for (const inc of incidents) {
+      const cat = inc.category || 'other';
+      if (!categoryMap[cat]) categoryMap[cat] = { category: cat, count: 0, critical: 0, high: 0, resolved: 0 };
+      categoryMap[cat].count++;
+      if (inc.severity === 'critical') categoryMap[cat].critical++;
+      if (inc.severity === 'high') categoryMap[cat].high++;
+      if (inc.status === 'resolved' || inc.status === 'closed') categoryMap[cat].resolved++;
+    }
+    const trend_analysis = Object.values(categoryMap).map(c => ({
+      category: c.category,
+      count: c.count,
+      severity_breakdown: { critical: c.critical, high: c.high },
+      resolution_rate: c.count > 0 ? Math.round((c.resolved / c.count) * 100) : 0,
+      trend: c.critical > 0 ? 'increasing' : c.resolved >= c.count * 0.5 ? 'decreasing' : 'stable'
+    })).sort((a, b) => b.count - a.count);
+
+    // Hotspot locations
+    const locationMap = {};
+    for (const inc of incidents) {
+      const loc = inc.location || 'Unknown';
+      if (!locationMap[loc]) locationMap[loc] = { location: loc, incident_count: 0, severities: [] };
+      locationMap[loc].incident_count++;
+      locationMap[loc].severities.push(inc.severity);
+    }
+    const hotspot_locations = Object.values(locationMap)
+      .map(l => ({
+        location: l.location,
+        incident_count: l.incident_count,
+        highest_severity: ['critical', 'high', 'medium', 'low'].find(s => l.severities.includes(s)) || 'low',
+        risk_level: l.incident_count >= 3 ? 'high' : l.incident_count >= 2 ? 'medium' : 'low'
+      }))
+      .sort((a, b) => b.incident_count - a.incident_count)
+      .slice(0, 10);
+
+    // Recommendations
+    const recommendations = [];
+    if (critical > 0) {
+      recommendations.push({ priority: 'critical', message: `${critical} critical incident(s) require immediate attention`, action: 'Deploy emergency response teams to critical incidents' });
+    }
+    if (high > 2) {
+      recommendations.push({ priority: 'high', message: `${high} high-severity incidents detected`, action: 'Increase staffing for high-priority incident response' });
+    }
+    const unresolvedOld = incidents.filter(i => !['resolved', 'closed'].includes(i.status) && new Date(i.created_at) < new Date(Date.now() - 7 * 86400000));
+    if (unresolvedOld.length > 0) {
+      recommendations.push({ priority: 'medium', message: `${unresolvedOld.length} incident(s) unresolved for over 7 days`, action: 'Review and escalate aging incidents' });
+    }
+    const topCategory = trend_analysis[0];
+    if (topCategory && topCategory.count >= 3) {
+      recommendations.push({ priority: 'medium', message: `"${topCategory.category}" is the most frequent incident category (${topCategory.count} incidents)`, action: `Conduct targeted inspection and preventive maintenance for ${topCategory.category}` });
+    }
+    if (active / total > 0.6) {
+      recommendations.push({ priority: 'high', message: `${Math.round((active / total) * 100)}% of incidents are still active`, action: 'Allocate additional resources to reduce incident backlog' });
+    }
+
+    res.json({
+      risk_score,
+      total_incidents: total,
+      active_incidents: active,
+      trend_analysis,
+      hotspot_locations,
+      recommendations,
+      generated_at: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error generating AI analysis:', err);
+    res.status(500).json({ error: 'Failed to generate analysis' });
+  }
+});
+
+app.get('/api/ai/analyze/:id', (req, res) => {
+  try {
+    const incident = getRow('SELECT * FROM incidents WHERE id = ?', [req.params.id]);
+    if (!incident) return res.status(404).json({ error: 'Incident not found' });
+
+    // Risk assessment
+    const severityScores = { critical: 90, high: 70, medium: 40, low: 15 };
+    const statusModifiers = { reported: 1.2, acknowledged: 1.1, dispatched: 1.0, in_progress: 0.8, resolved: 0.3, closed: 0.1 };
+    const baseScore = severityScores[incident.severity] || 40;
+    const modifier = statusModifiers[incident.status] || 1.0;
+    const ageHours = (Date.now() - new Date(incident.created_at).getTime()) / 3600000;
+    const ageFactor = Math.min(1.3, 1 + ageHours / (7 * 24));
+    const risk_assessment = {
+      risk_score: Math.min(100, Math.round(baseScore * modifier * ageFactor)),
+      severity: incident.severity,
+      status: incident.status,
+      age_hours: Math.round(ageHours),
+      factors: []
+    };
+    if (incident.severity === 'critical') risk_assessment.factors.push('Critical severity level');
+    if (ageHours > 48 && !['resolved', 'closed'].includes(incident.status)) risk_assessment.factors.push('Unresolved for over 48 hours');
+    if (!incident.assigned_to) risk_assessment.factors.push('No individual assigned');
+    if (['reported'].includes(incident.status)) risk_assessment.factors.push('Not yet acknowledged');
+
+    // Similar incidents
+    const similar = allRows(
+      'SELECT id, title, category, severity, status, location FROM incidents WHERE category = ? AND id != ? ORDER BY created_at DESC LIMIT 5',
+      [incident.category, incident.id]
+    );
+
+    // Recommended actions
+    const recommended_actions = [];
+    if (incident.status === 'reported') {
+      recommended_actions.push({ action: 'Acknowledge incident', priority: 'high', reason: 'Incident has not been acknowledged yet' });
+    }
+    if (!incident.assigned_to) {
+      recommended_actions.push({ action: 'Assign to a responder', priority: 'high', reason: 'No individual is assigned to handle this incident' });
+    }
+    if (incident.severity === 'critical' && incident.status !== 'in_progress' && incident.status !== 'resolved' && incident.status !== 'closed') {
+      recommended_actions.push({ action: 'Escalate to emergency response', priority: 'critical', reason: 'Critical incidents require immediate hands-on response' });
+    }
+    if (ageHours > 24 && !['resolved', 'closed'].includes(incident.status)) {
+      recommended_actions.push({ action: 'Escalate to management', priority: 'medium', reason: 'Incident has been open for over 24 hours' });
+    }
+    recommended_actions.push({ action: 'Document findings and update status', priority: 'low', reason: 'Keep stakeholders informed of progress' });
+
+    // Estimated resolution time
+    const resolvedSimilar = allRows(
+      "SELECT created_at, resolved_at FROM incidents WHERE category = ? AND resolved_at IS NOT NULL",
+      [incident.category]
+    );
+    let estimated_resolution_hours = null;
+    if (resolvedSimilar.length > 0) {
+      const totalMs = resolvedSimilar.reduce((sum, r) => sum + (new Date(r.resolved_at).getTime() - new Date(r.created_at).getTime()), 0);
+      estimated_resolution_hours = Math.round((totalMs / resolvedSimilar.length) / 3600000 * 10) / 10;
+    } else {
+      const defaultHours = { critical: 4, high: 12, medium: 48, low: 168 };
+      estimated_resolution_hours = defaultHours[incident.severity] || 48;
+    }
+
+    res.json({
+      incident_id: incident.id,
+      risk_assessment,
+      similar_incidents: similar,
+      recommended_actions,
+      estimated_resolution_hours,
+      generated_at: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error generating incident analysis:', err);
+    res.status(500).json({ error: 'Failed to generate incident analysis' });
+  }
+});
+
+// === Existing Routes ===
+
 app.post('/api/uploads', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   res.json({ url: `/uploads/${req.file.filename}` });
@@ -206,7 +572,7 @@ app.post('/api/uploads', upload.single('photo'), (req, res) => {
 app.post('/api/reports', upload.single('photo'), (req, res) => {
   try {
     const { title, description, category, location, location_detail,
-      reported_by_name, reported_by_email, reported_by_phone, urgency } = req.body;
+      reported_by_name, reported_by_email, reported_by_phone, urgency, latitude, longitude } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
 
     const classification = classifySeverity(category || 'other', description || '', urgency || '');
@@ -215,14 +581,17 @@ app.post('/api/reports', upload.single('photo'), (req, res) => {
     const now = new Date().toISOString();
     const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
+    const lat = latitude !== undefined && latitude !== null && latitude !== '' ? parseFloat(latitude) : null;
+    const lng = longitude !== undefined && longitude !== null && longitude !== '' ? parseFloat(longitude) : null;
+
     run(
       `INSERT INTO incidents (id, title, description, category, location, location_detail,
         reported_by_name, reported_by_email, reported_by_phone, photo_url, severity, status,
-        assigned_team, assigned_to, created_at, updated_at, resolved_at, tracking_code)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reported', ?, NULL, ?, ?, NULL, ?)`,
+        assigned_team, assigned_to, created_at, updated_at, resolved_at, tracking_code, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reported', ?, NULL, ?, ?, NULL, ?, ?, ?)`,
       [id, title, description || null, category || 'other', location || null, location_detail || null,
        reported_by_name || null, reported_by_email || null, reported_by_phone || null, photoUrl,
-       classification.severity, classification.assigned_team, now, now, trackingCode]
+       classification.severity, classification.assigned_team, now, now, trackingCode, lat, lng]
     );
 
     run(
@@ -387,7 +756,7 @@ app.patch('/api/incidents/:id', (req, res) => {
 app.get('/api/track/:code', (req, res) => {
   try {
     const incident = getRow(
-      'SELECT id, title, category, severity, status, location, location_detail, assigned_team, created_at, updated_at, resolved_at, tracking_code FROM incidents WHERE tracking_code = ?',
+      'SELECT id, title, category, severity, status, location, location_detail, assigned_team, created_at, updated_at, resolved_at, tracking_code, latitude, longitude FROM incidents WHERE tracking_code = ?',
       [req.params.code]
     );
     if (!incident) return res.status(404).json({ error: 'Tracking code not found' });

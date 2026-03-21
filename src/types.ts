@@ -35,6 +35,8 @@ export interface Incident {
   created_at: string
   updated_at: string
   resolved_at: string | null
+  latitude?: number | null
+  longitude?: number | null
   classification?: {
     severity: Severity
     assigned_team: string
