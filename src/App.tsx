@@ -13,6 +13,9 @@ import {
   LogOut,
   LogIn,
   User,
+  Map,
+  FileText,
+  BookOpen,
 } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import SubmitReport from './pages/SubmitReport'
@@ -29,8 +32,15 @@ const sidebarLinks = [
   { to: '/track', label: 'Track Report', icon: Search },
 ] as const
 
+const topNavLinks = [
+  { to: '/dashboard', label: 'Live Map', icon: Map, end: false, query: '?view=map' },
+  { to: '/dashboard', label: 'Reports', icon: FileText, end: false, query: '' },
+  { to: '/track', label: 'Resources', icon: BookOpen, end: false, query: '' },
+] as const
+
 function Sidebar() {
   const location = useLocation()
+  const { user } = useAuth()
 
   const isActive = (to: string, end?: boolean) => {
     if (end) return location.pathname === to
@@ -75,6 +85,28 @@ function Sidebar() {
 
       {/* Bottom */}
       <div className="mt-auto space-y-2 px-3 border-t border-slate-800/40 pt-6">
+        {/* User Profile */}
+        {user && (
+          <Link
+            to="/profile"
+            className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-blue-200 hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-primary">
+                  {(user.full_name || user.username).charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+              <p className="text-sm font-semibold text-slate-200 truncate">{user.full_name || user.username}</p>
+              <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
+            </div>
+          </Link>
+        )}
+
         <a href="#" className="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
           <HelpCircle className="w-5 h-5 shrink-0" />
           <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-medium text-sm">Support</span>
@@ -95,6 +127,13 @@ function TopBar() {
     return location.pathname.startsWith(to)
   }
 
+  const isTopNavActive = (to: string, query: string) => {
+    if (query) {
+      return location.pathname === to && location.search === query
+    }
+    return location.pathname.startsWith(to)
+  }
+
   return (
     <>
       <header className="fixed top-0 w-full md:left-20 md:w-[calc(100%-5rem)] z-40 bg-slate-900/70 backdrop-blur-md flex justify-between items-center px-6 md:px-8 h-16">
@@ -107,6 +146,26 @@ function TopBar() {
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <span className="text-lg font-black tracking-widest text-blue-100 uppercase font-headline">Hazard Reporter</span>
+
+          {/* Top navigation links - hidden on mobile */}
+          <nav className="hidden lg:flex items-center gap-1 ml-4">
+            {topNavLinks.map(({ to, label, query }) => {
+              const active = isTopNavActive(to, query)
+              return (
+                <Link
+                  key={label}
+                  to={`${to}${query}`}
+                  className={`px-4 py-1.5 text-sm font-semibold transition-all ${
+                    active
+                      ? 'text-primary border-b-2 border-primary'
+                      : 'text-slate-400 hover:text-slate-200 border-b-2 border-transparent'
+                  }`}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
         <div className="flex items-center gap-4">
           <Link
