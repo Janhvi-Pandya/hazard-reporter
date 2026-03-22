@@ -758,9 +758,11 @@ app.patch('/api/incidents/:id', (req, res) => {
 
 app.get('/api/track/:code', (req, res) => {
   try {
+    const code = req.params.code;
+    // Support lookup by tracking code (TRK-xxx) or incident ID (HZ-xxx)
     const incident = getRow(
-      'SELECT id, title, category, severity, status, location, location_detail, assigned_team, created_at, updated_at, resolved_at, tracking_code, latitude, longitude FROM incidents WHERE tracking_code = ?',
-      [req.params.code]
+      'SELECT id, title, description, category, severity, status, location, location_detail, assigned_team, created_at, updated_at, resolved_at, tracking_code, latitude, longitude FROM incidents WHERE tracking_code = ? OR id = ?',
+      [code, code]
     );
     if (!incident) return res.status(404).json({ error: 'Tracking code not found' });
 

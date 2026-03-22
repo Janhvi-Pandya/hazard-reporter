@@ -14,7 +14,7 @@ import {
   Circle,
 } from 'lucide-react'
 import { trackReport } from '../api'
-import type { Incident, Severity, Status } from '../types'
+import type { Incident, Severity, Status, StatusUpdate } from '../types'
 
 interface Stage { key: string; label: string }
 
@@ -177,7 +177,7 @@ export default function TrackReport() {
 
       <form onSubmit={handleSubmit} className="flex gap-3 mb-10">
         <input type="text" value={code} onChange={(e) => setCode(e.target.value)}
-          placeholder="Enter tracking code (e.g., TRK-X8Y2Z1A3)"
+          placeholder="Enter tracking code or incident ID (e.g., TRK-X8Y2Z1A3 or HZ-23EA54)"
           className="flex-1 rounded-xl bg-surface-container-highest/50 border border-outline-variant/20 px-5 py-3.5 text-base text-on-surface placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-all" />
         <button type="submit" disabled={loading || !code.trim()}
           className="inline-flex items-center gap-2 rounded-xl cta-gradient px-6 py-3.5 text-sm font-bold text-on-primary shadow-lg shadow-primary/10 hover:brightness-110 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95">
@@ -227,8 +227,16 @@ export default function TrackReport() {
             <ProgressPipeline status={incident.status} />
           </div>
 
+          {/* Description */}
+          {incident.description && (
+            <div className="px-6 py-5 border-b border-outline-variant/10">
+              <p className="text-[10px] font-label font-bold text-slate-500 uppercase tracking-widest mb-3">Description</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{incident.description}</p>
+            </div>
+          )}
+
           {/* Details Grid */}
-          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8">
+          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8 border-b border-outline-variant/10">
             <DetailItem icon={<Tag className="w-4 h-4" />} label="Category" value={formatCategory(incident.category)} />
             <DetailItem icon={<MapPin className="w-4 h-4" />} label="Location"
               value={[incident.location, incident.location_detail].filter(Boolean).join(' — ')} />
@@ -236,7 +244,44 @@ export default function TrackReport() {
               value={incident.assigned_team ? teamLabel(incident.assigned_team) : 'Pending assignment'} />
             <DetailItem icon={<Calendar className="w-4 h-4" />} label="Reported" value={formatDate(incident.created_at)} />
             <DetailItem icon={<Clock className="w-4 h-4" />} label="Last Updated" value={formatDate(incident.updated_at)} />
+            {incident.tracking_code && (
+              <DetailItem icon={<Shield className="w-4 h-4" />} label="Tracking Code" value={incident.tracking_code} />
+            )}
           </div>
+
+          {/* Status Timeline */}
+          {incident.status_updates && (incident.status_updates as StatusUpdate[]).length > 0 && (
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-label font-bold text-slate-500 uppercase tracking-widest mb-4">Status Timeline</p>
+              <div className="relative">
+                <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-outline-variant/20" />
+                <div className="space-y-6">
+                  {[...(incident.status_updates as StatusUpdate[])].reverse().map((update, idx) => {
+                    const statusKey = (update.new_status || 'reported') as Status
+                    const isPast = idx > 0
+                    return (
+                      <div key={idx} className="relative pl-9">
+                        <div className={`absolute left-[7px] top-1.5 w-2.5 h-2.5 rounded-full ${
+                          idx === 0 ? 'bg-primary ring-4 ring-primary/20' : 'bg-emerald-500'
+                        }`} />
+                        <div className="flex justify-between flex-wrap gap-2">
+                          <div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
+                              idx === 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-400'
+                            }`}>
+                              {statusKey.replace(/_/g, ' ')}
+                            </span>
+                            {update.note && <p className="text-sm text-on-surface-variant mt-1.5">{update.note}</p>}
+                          </div>
+                          <span className="text-xs text-slate-500">{formatDate(update.created_at)}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
