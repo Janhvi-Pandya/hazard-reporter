@@ -1,9 +1,7 @@
 import { useState, useCallback } from 'react'
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api'
 import { MapPin } from 'lucide-react'
-
-const GOOGLE_MAPS_API_KEY = ''
-
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBHXR26wRA-ZK_TfN8Bfgg22Rw-gB3FQgw'
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number, address: string) => void
   initialLat?: number
@@ -102,8 +100,8 @@ export default function LocationPicker({
   const [manualLng, setManualLng] = useState(initialLng?.toString() ?? '')
 
   const defaultCenter = {
-    lat: initialLat ?? 40.7128,
-    lng: initialLng ?? -74.006,
+    lat: initialLat ?? 48.4634,
+    lng: initialLng ?? -123.3117, // UVic coordinates
   }
 
   const handleMapClick = useCallback(

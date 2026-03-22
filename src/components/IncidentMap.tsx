@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, LoadScript, MarkerF, InfoWindowF } from '@react-google-maps/api'
 import { MapPin } from 'lucide-react'
 import type { Incident, Severity } from '../types'
-
-const GOOGLE_MAPS_API_KEY = ''
-
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBHXR26wRA-ZK_TfN8Bfgg22Rw-gB3FQgw'
 interface IncidentMapProps {
   incidents: Incident[]
 }
@@ -86,7 +84,8 @@ const severityTextColor: Record<Severity, string> = {
   low: 'text-emerald-500',
 }
 
-function getMarkerIcon(severity: Severity): google.maps.Symbol {
+function getMarkerIcon(severity: Severity): google.maps.Symbol | undefined {
+  if (typeof google === 'undefined' || !google.maps) return undefined;
   return {
     path: google.maps.SymbolPath.CIRCLE,
     fillColor: severityMarkerColor[severity],
@@ -108,7 +107,7 @@ const containerStyle = {
   borderRadius: '1rem',
 }
 
-const defaultCenter = { lat: 40.7128, lng: -74.006 }
+const defaultCenter = { lat: 48.4634, lng: -123.3117 } // UVic coordinates
 
 export default function IncidentMap({ incidents }: IncidentMapProps) {
   const [selectedIncident, setSelectedIncident] = useState<IncidentWithCoords | null>(null)
@@ -233,7 +232,7 @@ export default function IncidentMap({ incidents }: IncidentMapProps) {
             }}
           >
             {incidentsWithCoords.map((inc) => (
-              <Marker
+              <MarkerF
                 key={inc.id}
                 position={{ lat: inc.latitude!, lng: inc.longitude! }}
                 icon={getMarkerIcon(inc.severity)}
@@ -242,7 +241,7 @@ export default function IncidentMap({ incidents }: IncidentMapProps) {
             ))}
 
             {selectedIncident && selectedIncident.latitude != null && selectedIncident.longitude != null && (
-              <InfoWindow
+              <InfoWindowF
                 position={{
                   lat: selectedIncident.latitude,
                   lng: selectedIncident.longitude,
@@ -264,7 +263,7 @@ export default function IncidentMap({ incidents }: IncidentMapProps) {
                   </div>
                   <p className="text-xs text-[#dae2fd]/50">{selectedIncident.location}</p>
                 </div>
-              </InfoWindow>
+              </InfoWindowF>
             )}
           </GoogleMap>
         </div>
